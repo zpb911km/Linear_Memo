@@ -14,7 +14,7 @@ engine.setProperty('rate', 120)
 engine.setProperty('volume', 1.0)
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[1].id)
-Path = r'E:\\myfiles\\python\\MemoTry\\test.nmf'
+Path = r'E:\\myfiles\\python\\Linear_Memo\\test.nmf'
 DTFormat = r'%Y/%m/%d %H:%M'
 spliter = '\t'
 splitern = '\t'
@@ -108,8 +108,20 @@ def word_inquiry(word: str):
 def load(path) -> list[card]:
     with open(path, 'r', encoding='UTF-8') as file:
         txt = file.read()
-        lines = txt.split('\n')
+    l = txt.split('\n')
+    o = ''
+    for i in range(len(l)):
+        for j in range(i+1, len(l)):
+            try:
+                if l[i].split('<br />')[0] == l[j].split('<br />')[0]:
+                    l.remove(l[j])
+            except Exception:
+                pass
+    for i in l:
+        o += i + '\n'
+    txt = o[:-1]
     cl = []
+    lines = txt.split('\n')
     for line in lines:
         a = line.split(spliter)
         if len(a) != 7:
@@ -212,7 +224,7 @@ def Review():
             I = 0
         if i <= 0 or i > 10:
             raise ValueError
-        S = Ω * i / 10 + (1 - Ω) * float(c.S)
+        S = Ω * i / 10 + (1 - Ω) * float(c.S) / 10
         Δ = float(c.Δ) * log(ForgetLine + float(c.D))/log(S)
         T = datetime.now().strftime(DTFormat)
         if Δ > MaxCalcLimit:

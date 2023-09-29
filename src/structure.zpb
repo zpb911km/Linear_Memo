@@ -1,0 +1,7 @@
+>Linear_Memo structure
+ └>start_menu
+   └>chosen deck
+     ├>front
+     ├>back
+     ├>detail
+     └>add card
