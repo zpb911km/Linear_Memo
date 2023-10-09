@@ -61,6 +61,18 @@ def Replace(text):
     return text
 
 
+def checkRepeat(text: str) -> str:
+    lt = text.split('\n')
+    o = ''
+    for i in range(len(lt)):
+        for j in range(i+1, len(lt)):
+            if lt[i].split('<br />')[0] == lt[j].split('<br />')[0]:
+                lt.remove(lt[j])
+    for i in lt:
+        o += i + '\n'
+    return o[:-1]
+
+
 def word_inquiry(word: str):
     url = f'https://cn.bing.com/dict/search?q={word}'
 
@@ -138,7 +150,7 @@ def save(cl, path) -> None:
         txt = txt[:-len(splitern)]
         txt += '\n'
     with open(path, 'w', encoding='UTF-8') as file:
-        file.write(txt[:-1])
+        file.write(Replace(checkRepeat(txt[:-1])))
 
 
 def addNewWordCard() -> list[card]:
@@ -250,9 +262,9 @@ def NewcardTEMP():
     CardList = load(Path)
     try:
         NEW = addNewWordCard()
+        save(CardList + NEW, Path)
     except Exception as E:
         print(E)
-    save(CardList + NEW, Path)
 
 
 def RevLoop():
@@ -265,25 +277,26 @@ def RevLoop():
         save(OverdueCardList + TaciturnCardList, Path)
 
 
-while True:
-    i = input('\nAdd or Review :')
-    if i == 'A':
-        try:
-            while True:
-                NewcardTEMP()
-        except KeyboardInterrupt:
-            pass
-    elif i == 'R':
-        try:
-            while True:
-                RevLoop()
-                sleep(10)
-        except KeyboardInterrupt:
-            pass
-    elif i == 'Q':
-        CurrentCard = load(Path)
-        OverdueCardList, TaciturnCardList = Calculate(CurrentCard)
-        save(OverdueCardList, Path)
-        CurrentCard = load(Path)
-        save(CurrentCard + TaciturnCardList, Path)
-        break
+if __name__ == '__main__':
+    while True:
+        i = input('\nAdd or Review :')
+        if i == 'A':
+            try:
+                while True:
+                    NewcardTEMP()
+            except KeyboardInterrupt:
+                pass
+        elif i == 'R':
+            try:
+                while True:
+                    RevLoop()
+                    sleep(10)
+            except KeyboardInterrupt:
+                pass
+        elif i == 'Q':
+            CurrentCard = load(Path)
+            OverdueCardList, TaciturnCardList = Calculate(CurrentCard)
+            save(OverdueCardList, Path)
+            CurrentCard = load(Path)
+            save(CurrentCard + TaciturnCardList, Path)
+            break
