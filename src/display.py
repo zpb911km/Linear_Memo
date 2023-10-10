@@ -12,9 +12,6 @@ from controler import *
 import os
 
 
-PATH = r'E:\myfiles\python\Linear_Memo\src\LMFiles\test.nmf'
-
-
 class WinAC(QMainWindow):
     def __init__(self) -> None:
         super().__init__()

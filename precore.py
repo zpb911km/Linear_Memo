@@ -24,6 +24,7 @@ MaxCalcLimit = 300
 ForgetLine = 0.4
 OverdueCardList = []
 TaciturnCardList = []
+count = 0
 
 
 class card(NamedTuple):
@@ -164,7 +165,7 @@ def addNewWordCard() -> list[card]:
     D = 0.0
     i = input('先验稳定性:')
     if len(i) == 0:
-        S = 2
+        S = 4
     else:
         S = float(i)/10
     Δ = 1
@@ -193,16 +194,20 @@ def Calculate(cl) -> (list[card], list[card]):
 
 
 def Review():
-    global OverdueCardList, TaciturnCardList
-    OverdueCardList = sorted(OverdueCardList, key=attrgetter('Δ'))
-    TaciturnCardList = sorted(TaciturnCardList, key=attrgetter('Δ'))
+    global OverdueCardList, TaciturnCardList, count
+    OverdueCardList = sorted(OverdueCardList, key=attrgetter('S'))
+    TaciturnCardList = sorted(TaciturnCardList, key=attrgetter('S'))
     if len(OverdueCardList) == 0:
         save(TaciturnCardList, Path)
         print('Over!', datetime.now().strftime(r'%Y/%m/%d %H:%M:%S'))
         return None
     while len(OverdueCardList):
-        print(len(OverdueCardList), '  ', len(TaciturnCardList), '\n')
-        c = OverdueCardList[randint(0, len(OverdueCardList) - 1)]
+        system('cls')
+        OverdueCardList, TaciturnCardList = Calculate(OverdueCardList + TaciturnCardList)
+        OverdueCardList = sorted(OverdueCardList, key=attrgetter('S'))
+        TaciturnCardList = sorted(TaciturnCardList, key=attrgetter('S'))
+        print(len(OverdueCardList), '  ', len(TaciturnCardList), '  ', count, '\n')
+        c = OverdueCardList[randint(0,10)]
         if int(c.I) == 1:
             if randint(0, MaxCalcLimit) != 1:
                 continue
@@ -241,7 +246,7 @@ def Review():
         T = datetime.now().strftime(DTFormat)
         if Δ > MaxCalcLimit:
             I = 1
-        n = card(F, c.B, T, c.D, S, Δ, I)
+        n = card(F, c.B, T, c.D, str(S), str(Δ), str(I))
         print(Δ)
         if Δ < 0:
             raise ValueError
@@ -254,8 +259,8 @@ def Review():
         OverdueCardList.remove(c)
         TaciturnCardList.append(n)
         save(OverdueCardList + TaciturnCardList, Path)
-        sleep(1)
-        system('cls')
+        count += 1
+        sleep(0.5)
 
 
 def NewcardTEMP():
