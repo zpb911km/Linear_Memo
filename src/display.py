@@ -24,62 +24,94 @@ class WinAC(QMainWindow):
 
 class WinCD(QMainWindow):
     HomeSignal = Signal(str)
-    n = 0
+
     def __init__(self, path) -> None:
         super().__init__()
         self.path = path
         self.ui = WindowCD()
         self.ui.setupUi(self)
         self.ui.label.setText(path.split('\\')[-1].split('.')[0])
-        self.Ov, self.Ta = bulk_load(path)
+        self.Ov, self.Ta = bulk_load(self.path)
         self.ui.label_4.setText(str(len(self.Ov)))
         self.ui.label_5.setText(str(len(self.Ov) + len(self.Ta)))
         self.ui.pushButton_2.clicked.connect(self.Rv)
         self.ui.actionHome.triggered.connect(self.Home)
-    
-    def Rv(self):  # review
+
+    def Rv(self, seq=0):  # review
+        self.Ov, self.Ta = bulk_load(self.path)
+        self.ui.label_4.setText(str(len(self.Ov)))
+        self.ui.label_5.setText(str(len(self.Ov) + len(self.Ta)))
+        if seq == 0:
+            self.n = randint(0, len(self.Ov) - 1)
+        else:
+            self.n = self.nf
         self.c = self.Ov[self.n]
         self.subRv1()
-    
+
     def subRv1(self):
         self.F = WinF(self, self.c.front())
         self.F.show()
         self.F.OKSignal.connect(self.subRv2)
-    
+        self.F.BackSignal.connect(self.subRv4)
+        self.F.HomeSignal.connect(self.Home)
+
     def subRv2(self):
         self.B = WinB(self, self.c.front(), self.c.back())
         self.B.show()
         self.B.Reviewed.connect(self.subRv3)
-    
-    def subRv3(self):
-        self.n += 1
-        self.Rv()
+        self.B.BackSignal.connect(self.subRv4)
+        self.B.HomeSignal.connect(self.Home)
+
+    def subRv3(self, feedback):
+        self.Ov[self.n].review(feedback)
+        bulk_save(self.path, self.Ov + self.Ta)
+        self.nf = self.n
+        if self.n < len(self.Ov):
+            self.n += 1
+            self.Rv()
+        else:
+            self.close()
+
+    def subRv4(self):
+        self.Rv(1)
 
     def Home(self):
         self.HomeSignal.emit('')
         self.close()
-        
-        
 
 
 class WinF(QMainWindow):
     OKSignal = Signal()
+    BackSignal = Signal()
+    HomeSignal = Signal()
+
     def __init__(self, parent, t:str) -> None:
         super().__init__(parent=parent)
         self.ui = WindowF()
         self.ui.setupUi(self)
         self.ui.textEdit.setText(t)
         self.ui.pushButton.clicked.connect(self.turn)
-    
+        self.ui.actionBack.triggered.connect(self.back)
+        self.ui.actionHome.triggered.connect(self.home)
+
+    def home(self):
+        self.HomeSignal.emit()
+        self.close()
+
+    def back(self):
+        self.BackSignal.emit()
+        self.close()
+
     def turn(self):
         self.OKSignal.emit()
         self.close()
-        
 
 
 class WinB(QMainWindow):
-    Watched = False
-    Reviewed = Signal(bool)
+    Reviewed = Signal(float)
+    BackSignal = Signal()
+    HomeSignal = Signal()
+
     def __init__(self, parent, tf, tb) -> None:
         super().__init__(parent=parent)
         self.ui = WindowB()
@@ -87,10 +119,25 @@ class WinB(QMainWindow):
         self.ui.textEdit.setText(tf)
         self.ui.textEdit_2.setText(tb)
         self.ui.pushButton.clicked.connect(self.next)
+        self.ui.verticalSlider.valueChanged.connect(self.percent)
+        self.ui.actionBack.triggered.connect(self.back)
+        self.ui.actionHome.triggered.connect(self.home)
+
+    def back(self):
+        self.BackSignal.emit()
+        self.close()
+
+    def home(self):
+        self.HomeSignal.emit()
+        self.close()
+
+    def percent(self):
+        v = str(self.ui.verticalSlider.value()) + '%'
+        self.ui.label_3.setText(v)
 
     def next(self):
-        self.Watched = True
-        self.Reviewed.emit(self)
+        self.Reviewed.emit(self.ui.verticalSlider.value())
+        self.close()
 
 
 class WinDT(QMainWindow):
@@ -168,8 +215,6 @@ class MainWindow(QMainWindow):
         self.WinCD.show()
         self.hide()
         self.WinCD.HomeSignal.connect(self.show)
-
-
 
 
 def test():

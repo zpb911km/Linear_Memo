@@ -72,7 +72,7 @@ class card():
         return self.basedata[1].replace('<br />', '\n')
 
     def review(self, feedback: float) -> bool:  # 返回值表示是否解除过期状态
-        '''返回（0，100）'''
+        '''返回[1,100]'''
         if abs(feedback - 100) <= 0.00000000000001:
             self.basedata[6] = 2
             return None

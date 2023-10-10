@@ -69,6 +69,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName(u"verticalLayout")
+        self.pushButton_3 = QPushButton(self.centralwidget)
+        self.pushButton_3.setObjectName(u"pushButton_3")
+
+        self.verticalLayout.addWidget(self.pushButton_3)
+
         self.label_3 = QLabel(self.centralwidget)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setMaximumSize(QSize(71, 22))
@@ -82,15 +87,11 @@ class Ui_MainWindow(object):
         self.verticalSlider = QSlider(self.centralwidget)
         self.verticalSlider.setObjectName(u"verticalSlider")
         self.verticalSlider.setMaximumSize(QSize(71, 16777215))
+        self.verticalSlider.setMinimum(1)
+        self.verticalSlider.setMaximum(100)
         self.verticalSlider.setOrientation(Qt.Vertical)
 
         self.verticalLayout.addWidget(self.verticalSlider)
-
-        self.pushButton_2 = QPushButton(self.centralwidget)
-        self.pushButton_2.setObjectName(u"pushButton_2")
-        self.pushButton_2.setMaximumSize(QSize(75, 24))
-
-        self.verticalLayout.addWidget(self.pushButton_2)
 
         self.pushButton = QPushButton(self.centralwidget)
         self.pushButton.setObjectName(u"pushButton")
@@ -127,8 +128,8 @@ class Ui_MainWindow(object):
         self.actionHome.setText(QCoreApplication.translate("MainWindow", u"Home", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Front:", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Back:", None))
+        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Delet", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"**%", None))
-        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Remember", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Next", None))
         self.menuHome.setTitle(QCoreApplication.translate("MainWindow", u"Home", None))
     # retranslateUi
