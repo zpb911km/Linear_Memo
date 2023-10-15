@@ -89,6 +89,9 @@ class Ui_MainWindow(object):
         self.verticalSlider.setMaximumSize(QSize(71, 16777215))
         self.verticalSlider.setMinimum(1)
         self.verticalSlider.setMaximum(100)
+        self.verticalSlider.setSingleStep(1)
+        self.verticalSlider.setPageStep(3)
+        self.verticalSlider.setValue(40)
         self.verticalSlider.setOrientation(Qt.Vertical)
 
         self.verticalLayout.addWidget(self.verticalSlider)
@@ -129,7 +132,7 @@ class Ui_MainWindow(object):
         self.label.setText(QCoreApplication.translate("MainWindow", u"Front:", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Back:", None))
         self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Delet", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"**%", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"40%", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Next", None))
         self.menuHome.setTitle(QCoreApplication.translate("MainWindow", u"Home", None))
     # retranslateUi

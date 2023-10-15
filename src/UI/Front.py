@@ -45,14 +45,19 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addItem(self.horizontalSpacer)
 
-        self.pushButton = QPushButton(self.centralwidget)
-        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton_2 = QPushButton(self.centralwidget)
+        self.pushButton_2.setObjectName(u"pushButton_2")
 
-        self.horizontalLayout.addWidget(self.pushButton)
+        self.horizontalLayout.addWidget(self.pushButton_2)
 
         self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout.addItem(self.horizontalSpacer_2)
+
+        self.pushButton = QPushButton(self.centralwidget)
+        self.pushButton.setObjectName(u"pushButton")
+
+        self.horizontalLayout.addWidget(self.pushButton)
 
 
         self.verticalLayout.addLayout(self.horizontalLayout)
@@ -81,6 +86,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"<deck name> Front", None))
         self.actionBack.setText(QCoreApplication.translate("MainWindow", u"Back", None))
         self.actionHome.setText(QCoreApplication.translate("MainWindow", u"Home", None))
+        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"speak", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Flip", None))
         self.menuHome.setTitle(QCoreApplication.translate("MainWindow", u"Home", None))
     # retranslateUi

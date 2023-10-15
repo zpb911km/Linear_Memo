@@ -17,7 +17,7 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QMenu, QMenuBar,
-    QSizePolicy, QStatusBar, QTextEdit, QVBoxLayout,
+    QPlainTextEdit, QSizePolicy, QStatusBar, QVBoxLayout,
     QWidget)
 
 class Ui_MainWindow(object):
@@ -33,10 +33,10 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.textEdit = QTextEdit(self.centralwidget)
-        self.textEdit.setObjectName(u"textEdit")
+        self.plainTextEdit = QPlainTextEdit(self.centralwidget)
+        self.plainTextEdit.setObjectName(u"plainTextEdit")
 
-        self.verticalLayout.addWidget(self.textEdit)
+        self.verticalLayout.addWidget(self.plainTextEdit)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -50,7 +50,6 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuHome.menuAction())
-        self.menuHome.addAction(self.actionHome)
         self.menuHome.addAction(self.actionHome_2)
 
         self.retranslateUi(MainWindow)

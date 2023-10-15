@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTextEdit" name="textEdit"/>
+     <widget class="QPlainTextEdit" name="plainTextEdit"/>
     </item>
    </layout>
   </widget>
@@ -33,7 +33,6 @@
     <property name="title">
      <string>Home</string>
     </property>
-    <addaction name="actionHome"/>
     <addaction name="actionHome_2"/>
    </widget>
    <addaction name="menuHome"/>

@@ -37,9 +37,9 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="pushButton_2">
         <property name="text">
-         <string>Flip</string>
+         <string>speak</string>
         </property>
        </widget>
       </item>
@@ -55,6 +55,13 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton">
+        <property name="text">
+         <string>Flip</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

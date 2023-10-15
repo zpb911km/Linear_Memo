@@ -165,7 +165,7 @@ def addNewWordCard() -> list[card]:
     D = 0.0
     i = input('先验稳定性:')
     if len(i) == 0:
-        S = 4
+        S = 0.4
     else:
         S = float(i)/10
     Δ = 1
@@ -207,7 +207,7 @@ def Review():
         OverdueCardList = sorted(OverdueCardList, key=attrgetter('S'))
         TaciturnCardList = sorted(TaciturnCardList, key=attrgetter('S'))
         print(len(OverdueCardList), '  ', len(TaciturnCardList), '  ', count, '\n')
-        c = OverdueCardList[randint(0,10)]
+        c = OverdueCardList[0]
         if int(c.I) == 1:
             if randint(0, MaxCalcLimit) != 1:
                 continue

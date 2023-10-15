@@ -12,7 +12,7 @@ DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
 Ω = 0.95  # 经验权重，常数
 Rchecktime = 150  # R==1时，抽查底数
-MaxCalcLimit = 300  # R==1时，抽查底数
+MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调？）
 PATH = r'E:\myfiles\python\Linear_Memo\src\LMFiles\test.nmf'
 
@@ -56,20 +56,36 @@ class card():
         if self.basedata[6] == 1:
             if randint(0, Rchecktime) == 1:
                 return True
+            else:
+                return False
         elif self.basedata[6] == 2:
             if randint(0, Rchecktime/5) == 1:
                 return True
+            else:
+                return False
         period = datetime.now() - datetime.strptime(self.basedata[2], DTFormat)
         if period.days < self.basedata[5]:
             # 不超时
             return False
         return True
-    
+
     def front(self) -> str:
         return self.basedata[0].replace('<br />', '\n')
     
+    def setFront(self, text) -> None:
+        self.basedata[0] = text.replace('\n', '<br />')
+
     def back(self) -> str:
         return self.basedata[1].replace('<br />', '\n')
+    
+    def setBack(self, text) -> None:
+        self.basedata[1] = text.replace('\n', '<br />')
+
+    def S(self) -> str:
+        return self.basedata[4]
+
+    def Δ(self) -> str:
+        return self.basedata[5]
 
     def review(self, feedback: float) -> bool:  # 返回值表示是否解除过期状态
         '''返回[1,100]'''
@@ -77,7 +93,7 @@ class card():
             self.basedata[6] = 2
             return None
         # 核心三句
-        S = Ω * feedback + (1 - Ω) * self.basedata[4]
+        S = Ω * feedback + (1 - Ω) * self.basedata[4]*100
         Δ = self.basedata[5] * log(ForgetLine + self.basedata[3])/log(S/100)
         T = datetime.now().strftime(DTFormat)
         if Δ > MaxCalcLimit:
@@ -87,16 +103,17 @@ class card():
         # 判断永久记忆是否退化
         if R == 1 and Δ < MaxCalcLimit * 0.8:
             R = 0
-            S = 2
+            S = 20
             Δ = 1
         if R == 2 and feedback <= 30:
             R = 0
-            S = 2
+            S = 20
             Δ = 1
-        self.basedata[4] = S
+        self.basedata[4] = S/100
         self.basedata[5] = Δ
         self.basedata[2] = T
         self.basedata[6] = R
+        # print(Δ)
         if Δ < 0:
             raise ValueError
         if Δ > 1:
