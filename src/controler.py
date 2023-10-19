@@ -27,7 +27,7 @@ class card():
         判过期
     '''
     # 给card对象多一些抽象，方便表达
-    def __init__(self, F: str = '', B: str = '', T: str = datetime.now().strftime(DTFormat), D: float = 0.0, S: float = 20.0, Δ: float = 1, R: int = 0) -> None:
+    def __init__(self, F: str = '', B: str = '', T: str = datetime.now().strftime(DTFormat), D: float = 0.0, S: float = 0.4, Δ: float = 1, R: int = 0) -> None:
         self.basedata = [F.lower(), B, T, D, S, Δ, R]
         # 对位：         0，        1，2，3，4，5，6
         # 我也不想做如此愚蠢的操作啊
@@ -105,18 +105,26 @@ class card():
             R = 0
             S = 20
             Δ = 1
+            self.basedata[4] = S/100
+            self.basedata[5] = Δ
+            self.basedata[2] = T
+            self.basedata[6] = R
         if R == 2 and feedback <= 30:
             R = 0
             S = 20
             Δ = 1
-        self.basedata[4] = S/100
-        self.basedata[5] = Δ
-        self.basedata[2] = T
-        self.basedata[6] = R
+            self.basedata[4] = S/100
+            self.basedata[5] = Δ
+            self.basedata[2] = T
+            self.basedata[6] = R
         # print(Δ)
         if Δ < 0:
             raise ValueError
         if Δ > 1:
+            self.basedata[4] = S/100
+            self.basedata[5] = Δ
+            self.basedata[2] = T
+            self.basedata[6] = R
             return True
         return False
 
@@ -160,6 +168,75 @@ def rev_loop(Ov: list[card], Ta: list[card]):
             Ta.append(c)
             Ov.remove(c)
     return Ov, Ta
+
+
+def Replace(text):
+    rpl = [
+        ['，', ','],
+        ['。', '.'],
+        ['：', ':'],
+        ['；', ';'],
+        ['（', '('],
+        ['）', ')'],
+        ['……', '...'],
+        ['、', ','],
+        ['！', '!'],
+        ['？', '?'],
+        ['“', '"'],
+        ['”', '"'],
+        ['【', '['],
+        ['】', ']'],
+        ['`', '·'],
+        ['<=', '≤'],
+        ['>=', '≥']
+    ]
+    for pair in rpl:
+        text = text.replace(pair[0], pair[1])
+    return text
+
+
+def word_inquiry(word: str):
+    url = f'https://cn.bing.com/dict/search?q={word}'
+
+    web = get(url)
+    t = BeautifulSoup(web.content, 'lxml')
+    ans = t.head.find_all("meta")[3].attrs['content'].split('，')
+
+    word = ans[0].split('必应词典为您提供')[-1]
+    word = word.split('的释义')[0]
+    try:
+        pronun = ans[1] + '  ' + ans[2]
+    except Exception:
+        if len(word.split(' ')) > 1:
+            pronun = ' '
+            pass
+        else:
+            raise Exception('No such word!!')
+
+    outputA = str('')
+    outputA += word + '<br />' + pronun + '\t'
+
+    try:
+        meaning = t.body.find('div', 'contentPadding')\
+                    .find('div', 'content', 'b_cards')\
+                    .find('div', 'rs_area', 'b_cards')\
+                    .find('div', 'lf_area')\
+                    .find('div', 'qdef')\
+                    .find('ul')\
+                    .find_all('li')
+    except AttributeError:
+        raise Exception('No such word!!')
+
+    for line in meaning:
+        prop = line.find('span', 'pos').string.strip()
+        mean = line.find('span', 'def', 'b_regtxt').find('span').string.strip()
+        if '网' in prop:
+            prop = '网:'
+        if line == meaning[-1]:
+            outputA += Replace(prop) + Replace(mean)
+        else:
+            outputA += Replace(prop) + Replace(mean) + '<br />'
+    return outputA
 
 
 if __name__ == '__main__':

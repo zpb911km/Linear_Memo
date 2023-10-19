@@ -16,10 +16,10 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel,
-    QMainWindow, QMenu, QMenuBar, QPushButton,
-    QSizePolicy, QSpacerItem, QStatusBar, QTextEdit,
-    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMainWindow,
+    QMenu, QMenuBar, QPushButton, QSizePolicy,
+    QSpacerItem, QStatusBar, QTextEdit, QVBoxLayout,
+    QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -72,11 +72,6 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addItem(self.verticalSpacer)
 
-        self.checkBox = QCheckBox(self.centralwidget)
-        self.checkBox.setObjectName(u"checkBox")
-
-        self.verticalLayout_2.addWidget(self.checkBox)
-
         self.pushButton_2 = QPushButton(self.centralwidget)
         self.pushButton_2.setObjectName(u"pushButton_2")
 
@@ -111,7 +106,6 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuHome.menuAction())
-        self.menuHome.addAction(self.actionBack)
         self.menuHome.addAction(self.actionHome)
 
         self.retranslateUi(MainWindow)
@@ -125,7 +119,6 @@ class Ui_MainWindow(object):
         self.actionHome.setText(QCoreApplication.translate("MainWindow", u"Home", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Front:", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Back:", None))
-        self.checkBox.setText(QCoreApplication.translate("MainWindow", u"Add Reversed Card", None))
         self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Word Inquiry", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Add", None))
         self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Cancel", None))

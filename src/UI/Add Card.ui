@@ -79,13 +79,6 @@
        </spacer>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkBox">
-        <property name="text">
-         <string>Add Reversed Card</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="pushButton_2">
         <property name="text">
          <string>Word Inquiry</string>
@@ -136,7 +129,6 @@
     <property name="title">
      <string>Home</string>
     </property>
-    <addaction name="actionBack"/>
     <addaction name="actionHome"/>
    </widget>
    <addaction name="menuHome"/>
