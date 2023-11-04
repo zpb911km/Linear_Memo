@@ -59,7 +59,7 @@ class card():
             else:
                 return False
         elif self.basedata[6] == 2:
-            if randint(0, Rchecktime/5) == 1:
+            if randint(0, Rchecktime/2) == 1:
                 return True
             else:
                 return False
@@ -70,16 +70,16 @@ class card():
         return True
 
     def front(self) -> str:
-        return self.basedata[0].replace('<br />', '\n')
+        return self.basedata[0].replace('<br />', '\n\n')
     
     def setFront(self, text) -> None:
-        self.basedata[0] = text.replace('\n', '<br />')
+        self.basedata[0] = text.replace('\n\n', '<br />')
 
     def back(self) -> str:
-        return self.basedata[1].replace('<br />', '\n')
+        return self.basedata[1].replace('<br />', '\n\n')
     
     def setBack(self, text) -> None:
-        self.basedata[1] = text.replace('\n', '<br />')
+        self.basedata[1] = text.replace('\n\n', '<br />')
 
     def S(self) -> str:
         return self.basedata[4]
@@ -87,10 +87,17 @@ class card():
     def Δ(self) -> str:
         return self.basedata[5]
 
+    def R(self) -> str:
+        return self.basedata[6]
+
     def review(self, feedback: float) -> bool:  # 返回值表示是否解除过期状态
         '''返回[1,100]'''
         if abs(feedback - 100) <= 0.00000000000001:
             self.basedata[6] = 2
+            return None
+        if abs(feedback - 0) <= 0.00000000000001:
+            self.basedata[2] = datetime.now().strftime(DTFormat)
+            self.basedata[5] = 1
             return None
         # 核心三句
         S = Ω * feedback + (1 - Ω) * self.basedata[4]*100
@@ -116,17 +123,21 @@ class card():
             self.basedata[4] = S/100
             self.basedata[5] = Δ
             self.basedata[2] = T
-            self.basedata[6] = R
-        # print(Δ)
-        if Δ < 0:
-            raise ValueError
+            self.basedata[6] = 0
+        print(Δ)
+        if Δ <= 0:
+            Δ = -Δ + 0.01
         if Δ > 1:
             self.basedata[4] = S/100
             self.basedata[5] = Δ
             self.basedata[2] = T
             self.basedata[6] = R
             return True
-        return False
+        else:
+            self.basedata[4] = S/100
+            self.basedata[5] = Δ
+            self.basedata[6] = R
+            return False
 
 
 def bulk_load(path) -> (list[card], list[card]):
@@ -240,6 +251,7 @@ def word_inquiry(word: str):
 
 
 if __name__ == '__main__':
+    PATH = "E:\我的大学\Personal\LMFiles\\current.nmf"
     OverdueCardList, TaciturnCardList = bulk_load(PATH)
     try:
         OverdueCardList, TaciturnCardList = rev_loop(OverdueCardList, TaciturnCardList)

@@ -4,11 +4,10 @@ from UI.Chosen_Deck import Ui_MainWindow as WindowCD
 from UI.Front import Ui_MainWindow as WindowF
 from UI.Back import Ui_MainWindow as WindowB
 from UI.Detail import Ui_MainWindow as WindowDT
-from PySide6.QtCore import Signal, QUrl
-from PySide6.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QFileDialog, QWidget
-from PySide6.QtGui import QTextCursor, QFont, QImage, QTextDocument
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PySide6.QtGui import QFont, QShortcut, QKeySequence
 import webbrowser
-from time import time
 from controler import bulk_load, bulk_save, card, word_inquiry
 from random import randint
 import os
@@ -34,6 +33,14 @@ class WinAC(QMainWindow):
         self.ui.pushButton.clicked.connect(self.addCard)
         self.ui.pushButton_3.clicked.connect(self.clear)
         self.ui.pushButton_2.clicked.connect(self.inquiry)
+        # 创建快捷键
+        self.ShortAD = QShortcut(QKeySequence("Alt+O"), self)
+        # 给快捷键设置信号事件
+        self.ShortAD.activated.connect(self.addCard)
+        self.ShortIQ = QShortcut(QKeySequence("Alt+I"), self)
+        self.ShortIQ.activated.connect(self.inquiry)
+        self.ui.textEdit.setFont(QFont([u"Cascadia Mono"], 24))
+        self.ui.textEdit_2.setFont(QFont([u"Cascadia Mono"], 24))
 
     def home(self):
         self.close()
@@ -62,9 +69,10 @@ class WinAC(QMainWindow):
 class WinCD(QMainWindow):
     HomeSignal = Signal(str)
 
-    def __init__(self, path) -> None:
+    def __init__(self, path, parent) -> None:
         super().__init__()
         self.path = path
+        self.par = parent
         self.ui = WindowCD()
         self.ui.setupUi(self)
         self.deckName = path.split('\\')[-1].split('.')[0]
@@ -76,6 +84,9 @@ class WinCD(QMainWindow):
         self.ui.actionHome.triggered.connect(self.Home)
         self.ui.pushButton_3.clicked.connect(self.Detail)
         self.ui.pushButton.clicked.connect(self.AddCard)
+        QShortcut(QKeySequence("Ctrl+R"), self).activated.connect(self.Review)
+        QShortcut(QKeySequence("Ctrl+A"), self).activated.connect(self.AddCard)
+        QShortcut(QKeySequence("Ctrl+D"), self).activated.connect(self.Detail)
 
     def AddCard(self):
         self.A = WinAC(self.path)
@@ -100,7 +111,7 @@ class WinCD(QMainWindow):
         self.Ov, self.Ta = bulk_load(self.path)
         self.ui.label_4.setText(str(len(self.Ov)))
         self.ui.label_5.setText(str(len(self.Ov) + len(self.Ta)))
-        self.Ov = sorted(self.Ov, key=lambda c: c.S())
+        self.Ov = sorted(self.Ov, key=lambda c: (c.S(), -c.R()))
         '''
         l = 0
         for i in self.Ov:
@@ -109,8 +120,10 @@ class WinCD(QMainWindow):
             print(i.S(), end=' ')
             l = i.S()
         '''
+        if len(self.Ov) == 0:
+            return None
         if seq == 0:
-            self.n = randint(0,5)  # randint(0, len(self.Ov) - 1)
+            self.n = randint(0, min(10, len(self.Ov) - 1))  # randint(0, len(self.Ov) - 1)
         else:
             self.n = self.nf
         self.c: card = self.Ov[self.n]
@@ -118,14 +131,14 @@ class WinCD(QMainWindow):
 
     def subReview1(self):
         self.F = WinF(self, self.c.front(), self.deckName)
-        self.F.show()
+        self.F.showMaximized()
         self.F.OKSignal.connect(self.subReview2)
         self.F.BackSignal.connect(self.subReview4)
         self.F.HomeSignal.connect(self.Home)
 
     def subReview2(self):
         self.B = WinB(self, self.c.front(), self.c.back(), self.deckName)
-        self.B.show()
+        self.B.showMaximized()
         self.B.Reviewed.connect(self.subReview3)
         self.B.BackSignal.connect(self.subReview4)
         self.B.HomeSignal.connect(self.Home)
@@ -154,6 +167,7 @@ class WinCD(QMainWindow):
 
     def Home(self):
         self.HomeSignal.emit('')
+        self.par.show()
         self.close()
 
 
@@ -178,7 +192,10 @@ class WinF(QMainWindow):
         self.ui.actionHome.triggered.connect(self.home)
         self.setWindowTitle(title)
         self.ui.pushButton_2.clicked.connect(self.speak)
-        #self.ui.textEdit.textChanged.connect(self.ui.textEdit.setText(self.t))
+        QShortcut(QKeySequence("Ctrl+S"), self).activated.connect(self.speak)
+        QShortcut(QKeySequence("Ctrl+F"), self).activated.connect(self.turn)
+        # self.setGeometry(0, 0, 1920, 1080)
+        # self.ui.textEdit.textChanged.connect(self.ui.textEdit.setText(self.t))
 
     def speak(self):
         engine.say(self.t.split('\n')[0])
@@ -224,11 +241,13 @@ class WinB(QMainWindow):
         self.ui.actionHome.triggered.connect(self.home)
         self.ui.pushButton_3.clicked.connect(self.delet)
         self.setWindowTitle(title)
+        QShortcut(QKeySequence("Ctrl+Enter"), self).activated.connect(self.next)
+        QShortcut(QKeySequence("Ctrl+Delete"), self).activated.connect(self.delet)
 
     def delet(self):
         v = 748.0
-        F = self.ui.textEdit.toPlainText().replace('\ufffc', '')
-        B = self.ui.textEdit_2.toPlainText().replace('\ufffc', '')
+        F = self.ui.textEdit.toPlainText().replace('\n\ufffc', '')
+        B = self.ui.textEdit_2.toPlainText().replace('\n\ufffc', '')
         self.Reviewed.emit(v, F, B)
         self.close()
 
@@ -246,8 +265,8 @@ class WinB(QMainWindow):
 
     def next(self):
         v = self.ui.verticalSlider.value()
-        F = self.ui.textEdit.toPlainText().replace('\ufffc', '')
-        B = self.ui.textEdit_2.toPlainText().replace('\ufffc', '')
+        F = self.ui.textEdit.toPlainText().replace('\n\ufffc', '')
+        B = self.ui.textEdit_2.toPlainText().replace('\n\ufffc', '')
         self.Reviewed.emit(v, F, B)
         self.close()
 
@@ -261,7 +280,7 @@ class WinDT(QMainWindow):
         self.ui.plainTextEdit.setPlainText(text)
         self.ui.plainTextEdit.textChanged.connect(self.save)
         self.ui.actionHome_2.triggered.connect(self.home)
-    
+
     def home(self):
         self.close()
 
@@ -303,7 +322,11 @@ class MainWindow(QMainWindow):
         # 定义一些变量（类）
         self.DeckDict = {}
         self.selectedDeck = ''
-        self.initLoad()
+        try:
+            self.initLoad()
+            self.Select()
+        except Exception:
+            pass
 
     def gitLink(self):
         webbrowser.open('https://github.com/zpb911km/Linear_Memo/tree/Z01')
@@ -311,7 +334,7 @@ class MainWindow(QMainWindow):
     def initLoad(self):
         # 导入文件夹
         try:
-            path = open('E:\myfiles\python\Linear_Memo\src\lastPath.txt', 'r', encoding='UTF-8').read()
+            path = open(r'E:\\myfiles\\python\\Linear_Memo\\src\\lastPath.txt', 'r', encoding='UTF-8').read()
         except FileExistsError:
             return None
         # print(path)
@@ -330,16 +353,20 @@ class MainWindow(QMainWindow):
             tempL.append(name)
         t = 'index\tname\t\tOvertime\tsum\n'
         for num, name in enumerate(rt.keys()):
-            self.Ov, self.Ta = bulk_load(rt[name])
-            t += str(num) + '\t' + name + '\t\t' + str(len(self.Ov)) + '\t' + str(len(self.Ov) + len(self.Ta)) + '\n'
+            try:
+                self.Ov, self.Ta = bulk_load(rt[name])
+                t += str(num) + '\t' + name + '\t\t' + str(len(self.Ov)) + '\t' + str(len(self.Ov) + len(self.Ta)) + '\n'
+            except IndexError:
+                print(rt[name])
+                t += str(num) + '\t' + name + '\t\t' + 'error' + '\t' + 'error' + '\n'
         # print(t)
         # 在界面显示牌组
         self.ui.plainTextEdit.setPlainText(t)
-    
+
     def Load(self):
         # 导入文件夹
         path = QFileDialog.getExistingDirectory(self, "选择文件夹", r"E:\myfiles\python\Linear_Memo\src")
-        open('E:\myfiles\python\Linear_Memo\src\lastPath.txt', 'w', encoding='UTF-8').write(path)
+        open(r'E:\myfiles\python\Linear_Memo\src\lastPath.txt', 'w', encoding='UTF-8').write(path)
         # print(path)
         rt = {}
         files = os.listdir(path)
@@ -354,8 +381,12 @@ class MainWindow(QMainWindow):
             tempL.append(name)
         t = 'index\tname\t\tOvertime\tsum\n'
         for num, name in enumerate(rt.keys()):
-            self.Ov, self.Ta = bulk_load(rt[name])
-            t += str(num) + '\t' + name + '\t\t' + str(len(self.Ov)) + '\t' + str(len(self.Ov) + len(self.Ta)) + '\n'
+            try:
+                self.Ov, self.Ta = bulk_load(rt[name])
+                t += str(num) + '\t' + name + '\t\t' + str(len(self.Ov)) + '\t' + str(len(self.Ov) + len(self.Ta)) + '\n'
+            except IndexError:
+                print(rt[name])
+                t += str(num) + '\t' + name + '\t\t' + 'error' + '\t' + 'error' + '\n'
         # print(t)
         # 在界面显示牌组
         self.ui.plainTextEdit.setPlainText(t)
@@ -382,19 +413,31 @@ class MainWindow(QMainWindow):
         except IndexError:
             self.ui.lineEdit.setText('IndexError!')
         self.ui.lineEdit.textChanged.connect(self.Rename)
+        t = 'index\tname\t\tOvertime\tsum\n'
+        for num, name in enumerate(self.DeckDict.keys()):
+            try:
+                self.Ov, self.Ta = bulk_load(self.DeckDict[name])
+                t += str(num) + '\t' + name + '\t\t' + str(len(self.Ov)) + '\t' + str(len(self.Ov) + len(self.Ta)) + '\n'
+            except IndexError:
+                print(self.DeckDict[name])
+                t += str(num) + '\t' + name + '\t\t' + 'error' + '\t' + 'error' + '\n'
+        self.ui.plainTextEdit.setPlainText(t)
 
     def Choose(self):
         file = self.selectedDeck
-        self.WinCD = WinCD(file)
+        self.WinCD = WinCD(file, self)
         self.WinCD.show()
-        self.hide()
-        self.WinCD.HomeSignal.connect(self.show)
-    
+        # self.hide()
+        self.WinCD.HomeSignal.connect(self.initLoad)
+
     def Rename(self):
         file = self.selectedDeck
         name = self.ui.lineEdit.text()
         forname = file.split('\\')[-1].split('.')[0]
-        file = file.split('\\')[0] + '\\' + file.split('\\')[1][:-3].replace(forname, name) + file[-3:]
+        try:
+            file = file.split('\\')[0] + '\\' + file.split('\\')[1][:-3].replace(forname, name) + file[-3:]
+        except IndexError:
+            file = name + '.nmf'
         if len(name) == 0:
             return None
         del self.DeckDict[forname]
@@ -409,8 +452,8 @@ class MainWindow(QMainWindow):
         del file, name, forname
 
     def addDeck(self):
-        self.DeckDict['newDeck'] = self.selectedDeck.replace(self.selectedDeck.split('\\')[-1].split('.')[0], 'newDeck')
-        open(self.selectedDeck.replace(self.selectedDeck.split('\\')[-1].split('.')[0], 'newDeck'), 'w', encoding='UTF-8').write('		2023/06/08 17:40	0.0	1.0	1.0	0')
+        self.DeckDict['newDeck'] = self.selectedDeck.replace(self.selectedDeck.split('\\')[-1], 'newDeck.nmf')
+        open(self.selectedDeck.replace(self.selectedDeck.split('\\')[-1], 'newDeck.nmf'), 'w', encoding='UTF-8').write('		2023/06/08 17:40	0.0	1.0	1.0	0')
         t = 'index\tname\t\tOvertime\tTaciturn\n'
         for num, name in enumerate(self.DeckDict.keys()):
             self.Ov, self.Ta = bulk_load(self.DeckDict[name])
@@ -429,11 +472,12 @@ class MainWindow(QMainWindow):
         self.Select()
 
 
-def test():
+def main():
     app = QApplication([])
     main_window = MainWindow()
     main_window.show()
     app.exec()
 
 
-test()
+if __name__ == '__main__':
+    main()

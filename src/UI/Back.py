@@ -87,7 +87,7 @@ class Ui_MainWindow(object):
         self.verticalSlider = QSlider(self.centralwidget)
         self.verticalSlider.setObjectName(u"verticalSlider")
         self.verticalSlider.setMaximumSize(QSize(71, 16777215))
-        self.verticalSlider.setMinimum(1)
+        self.verticalSlider.setMinimum(0)
         self.verticalSlider.setMaximum(100)
         self.verticalSlider.setSingleStep(1)
         self.verticalSlider.setPageStep(3)
