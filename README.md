@@ -14,3 +14,11 @@ A tool may assist your memory
 
 - 开发未完成
 - 缺乏数据与理论支撑
+
+## reqirements
+
+- pySide6
+- webbrowser
+- pyttsx3
+- bs4
+- requests

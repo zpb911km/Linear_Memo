@@ -1,11 +1,10 @@
-from typing import Optional
 from UI.Start_Menu import Ui_MainWindow as WindowST
 from UI.Add_Card import Ui_MainWindow as WindowAC
 from UI.Chosen_Deck import Ui_MainWindow as WindowCD
 from UI.review import Ui_MainWindow as WindowR
 from UI.Detail import Ui_MainWindow as WindowDT
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide6.QtGui import QFont, QShortcut, QKeySequence
 import webbrowser
 from controler import bulk_load, bulk_save, card, word_inquiry
@@ -167,7 +166,7 @@ class WinR(QMainWindow):
         if v == 100:
             v = -0
         self.ui.lcdNumber_3.display(v)
-    
+
     def trace1(self):
         self.ui.verticalSlider.setValue(10)
         self.ui.lcdNumber_3.display(10)
@@ -262,10 +261,6 @@ class WinR(QMainWindow):
             self.reviewed()
         else:
             self.displayBack()
-        
-
-
-
 
 
 class WinDT(QMainWindow):
@@ -291,18 +286,6 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         # 设置子窗口
-        '''
-        self.WinAC = WinAC()
-        self.WinCD = WinCD()
-        self.WinF = WinF()
-        self.WinB = WinB()
-        self.WinDT = WinDT()
-        self.WinAC.show()
-        self.WinDT.show()
-        self.WinF.show()
-        self.WinB.show()
-        self.WinCD.show()
-        '''
         self.ui = WindowST()
         self.ui.setupUi(self)
         font = self.ui.plainTextEdit.font()
