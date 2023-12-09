@@ -18,6 +18,7 @@ engine.setProperty('rate', 120)
 engine.setProperty('volume', 1.0)
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[1].id)
+fontFamily = u"msyh"
 
 
 class WinAC(QMainWindow):
@@ -39,8 +40,8 @@ class WinAC(QMainWindow):
         self.ShortAD.activated.connect(self.addCard)
         self.ShortIQ = QShortcut(QKeySequence("Alt+I"), self)
         self.ShortIQ.activated.connect(self.inquiry)
-        self.ui.textEdit.setFont(QFont([u"Cascadia Mono"], 24))
-        self.ui.textEdit_2.setFont(QFont([u"Cascadia Mono"], 24))
+        self.ui.textEdit.setFont(QFont([fontFamily], 24))
+        self.ui.textEdit_2.setFont(QFont([fontFamily], 24))
 
     def home(self):
         self.close()
@@ -131,14 +132,16 @@ class WinCD(QMainWindow):
 
     def subReview1(self):
         self.F = WinF(self, self.c.front(), self.deckName)
-        self.F.showMaximized()
+        # self.F.showMaximized()
+        self.F.show()
         self.F.OKSignal.connect(self.subReview2)
         self.F.BackSignal.connect(self.subReview4)
         self.F.HomeSignal.connect(self.Home)
 
     def subReview2(self):
         self.B = WinB(self, self.c.front(), self.c.back(), self.deckName)
-        self.B.showMaximized()
+        # self.B.showMaximized()
+        self.B.show()
         self.B.Reviewed.connect(self.subReview3)
         self.B.BackSignal.connect(self.subReview4)
         self.B.HomeSignal.connect(self.Home)
@@ -183,9 +186,9 @@ class WinF(QMainWindow):
         self.ui.textEdit.setText(t)
         if 'file:///' in t:
             self.ui.textEdit.append("<img src=\"path\" />".replace('path', t.split('file:///')[-1]))
-            self.ui.textEdit.setFont(QFont([u"Cascadia Mono"], 4))
+            self.ui.textEdit.setFont(QFont([fontFamily], 4))
         else:
-            self.ui.textEdit.setFont(QFont([u"Cascadia Mono"], 24))
+            self.ui.textEdit.setFont(QFont([fontFamily], 24))
         self.t = t
         self.ui.pushButton.clicked.connect(self.turn)
         self.ui.actionBack.triggered.connect(self.back)
@@ -227,14 +230,14 @@ class WinB(QMainWindow):
         self.ui.textEdit_2.setText(tb)
         if 'file:///' in tf:
             self.ui.textEdit.append("<img src=\"path\" />".replace('path', tf.split('file:///')[-1]))
-            self.ui.textEdit.setFont(QFont([u"Cascadia Mono"], 4))
+            self.ui.textEdit.setFont(QFont([fontFamily], 4))
         else:
-            self.ui.textEdit.setFont(QFont([u"Cascadia Mono"], 24))
+            self.ui.textEdit.setFont(QFont([fontFamily], 24))
         if 'file:///' in tb:
             self.ui.textEdit_2.append("<img src=\"path\" />".replace('path', tb.split('file:///')[-1]))
-            self.ui.textEdit_2.setFont(QFont([u"Cascadia Mono"], 4))
+            self.ui.textEdit_2.setFont(QFont([fontFamily], 4))
         else:
-            self.ui.textEdit_2.setFont(QFont([u"Cascadia Mono"], 24))
+            self.ui.textEdit_2.setFont(QFont([fontFamily], 24))
         self.ui.pushButton.clicked.connect(self.next)
         self.ui.verticalSlider.valueChanged.connect(self.percent)
         self.ui.actionBack.triggered.connect(self.back)
@@ -344,7 +347,7 @@ class MainWindow(QMainWindow):
         files = os.listdir(path)
         for file in files:
             file_path = os.path.join(path, file)
-            if os.path.isfile(file_path) and str(file).split('.')[1] == 'nmf':
+            if os.path.isfile(file_path) and str(file).split('.')[1] == 'NMF':
                 rt[str(file).split('.')[0]] = file_path
         self.DeckDict = rt
         # print(rt.keys())
@@ -372,7 +375,7 @@ class MainWindow(QMainWindow):
         files = os.listdir(path)
         for file in files:
             file_path = os.path.join(path, file)
-            if os.path.isfile(file_path) and str(file).split('.')[1] == 'nmf':
+            if os.path.isfile(file_path) and str(file).split('.')[1] == 'NMF':
                 rt[str(file).split('.')[0]] = file_path
         self.DeckDict = rt
         # print(rt.keys())

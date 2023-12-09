@@ -1,4 +1,4 @@
-f = open('E:\myfiles\python\Linear_Memo\\test.nmf','r',encoding='UTF-8')
+f = open(r'E:\\Nutstore\\LMFiles\\#current.NMF','r',encoding='UTF-8')
 t = f.read()
 l = t.split('\n')
 o = ''
@@ -13,5 +13,5 @@ for i in range(len(l)):
 for i in l:
     o += i + '\n'
 
-f = open('E:\myfiles\python\Linear_Memo\\test.nmf','w',encoding='UTF-8')
+f = open("E:\\Nutstore\\LMFiles\\current.NMF",'w',encoding='UTF-8')
 f.write(o[:-1])

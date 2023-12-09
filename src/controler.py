@@ -4,10 +4,7 @@ from datetime import datetime
 from requests import get
 from bs4 import BeautifulSoup
 from os import system
-from time import sleep
 from random import randint, sample
-import pyttsx3
-from operator import attrgetter
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
 Ω = 0.95  # 经验权重，常数
@@ -15,6 +12,7 @@ Rchecktime = 150  # R==1时，抽查底数
 MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调？）
 PATH = r'E:\myfiles\python\Linear_Memo\src\LMFiles\test.nmf'
+
 
 class card():
     '''
@@ -38,7 +36,7 @@ class card():
         for i in self.basedata:
             text += str(i) + spliter
         return text[:-1]
-    
+
     def read_text(self, text) -> None:
         # 从文件读取卡片信息
         templist = text.split(spliter)
@@ -70,16 +68,16 @@ class card():
         return True
 
     def front(self) -> str:
-        return self.basedata[0].replace('<br />', '\n\n')
-    
+        return self.basedata[0].replace('<br />', '\n')
+
     def setFront(self, text) -> None:
-        self.basedata[0] = text.replace('\n\n', '<br />')
+        self.basedata[0] = text.replace('\n', '<br />')
 
     def back(self) -> str:
-        return self.basedata[1].replace('<br />', '\n\n')
-    
+        return self.basedata[1].replace('<br />', '\n')
+
     def setBack(self, text) -> None:
-        self.basedata[1] = text.replace('\n\n', '<br />')
+        self.basedata[1] = text.replace('\n', '<br />')
 
     def S(self) -> str:
         return self.basedata[4]
@@ -251,7 +249,7 @@ def word_inquiry(word: str):
 
 
 if __name__ == '__main__':
-    PATH = "E:\我的大学\Personal\LMFiles\\current.nmf"
+    PATH = "E:\\我的大学\\Personal\\LMFiles\\current.nmf"
     OverdueCardList, TaciturnCardList = bulk_load(PATH)
     try:
         OverdueCardList, TaciturnCardList = rev_loop(OverdueCardList, TaciturnCardList)
