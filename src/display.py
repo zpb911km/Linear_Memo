@@ -1,17 +1,18 @@
+from typing import Optional
 from UI.Start_Menu import Ui_MainWindow as WindowST
 from UI.Add_Card import Ui_MainWindow as WindowAC
 from UI.Chosen_Deck import Ui_MainWindow as WindowCD
-from UI.Front import Ui_MainWindow as WindowF
-from UI.Back import Ui_MainWindow as WindowB
+from UI.review import Ui_MainWindow as WindowR
 from UI.Detail import Ui_MainWindow as WindowDT
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QWidget
 from PySide6.QtGui import QFont, QShortcut, QKeySequence
 import webbrowser
 from controler import bulk_load, bulk_save, card, word_inquiry
 from random import randint
 import os
 import pyttsx3
+from time import sleep
 
 engine = pyttsx3.init()
 engine.setProperty('rate', 120)
@@ -108,65 +109,12 @@ class WinCD(QMainWindow):
         self.D = WinDT(text[:-1], self.path)
         self.D.show()
 
-    def Review(self, seq=0):  # review
+    def Review(self):  # review
         self.Ov, self.Ta = bulk_load(self.path)
         self.ui.label_4.setText(str(len(self.Ov)))
         self.ui.label_5.setText(str(len(self.Ov) + len(self.Ta)))
-        self.Ov = sorted(self.Ov, key=lambda c: (c.S(), -c.R()))
-        '''
-        l = 0
-        for i in self.Ov:
-            if i.S() == l:
-                continue
-            print(i.S(), end=' ')
-            l = i.S()
-        '''
-        if len(self.Ov) == 0:
-            return None
-        if seq == 0:
-            self.n = randint(0, min(10, len(self.Ov) - 1))  # randint(0, len(self.Ov) - 1)
-        else:
-            self.n = self.nf
-        self.c: card = self.Ov[self.n]
-        self.subReview1()
-
-    def subReview1(self):
-        self.F = WinF(self, self.c.front(), self.deckName)
-        # self.F.showMaximized()
-        self.F.show()
-        self.F.OKSignal.connect(self.subReview2)
-        self.F.BackSignal.connect(self.subReview4)
-        self.F.HomeSignal.connect(self.Home)
-
-    def subReview2(self):
-        self.B = WinB(self, self.c.front(), self.c.back(), self.deckName)
-        # self.B.showMaximized()
-        self.B.show()
-        self.B.Reviewed.connect(self.subReview3)
-        self.B.BackSignal.connect(self.subReview4)
-        self.B.HomeSignal.connect(self.Home)
-
-    def subReview3(self, feedback, F, B):
-        if feedback == 748.0:
-            self.Ov.remove(self.c)
-            self.nf = self.n
-            bulk_save(self.path, self.Ov + self.Ta)
-            self.Review()
-        else:
-            self.c.review(feedback)
-            self.c.setFront(F)
-            self.c.setBack(B)
-            # print(self.c.out_text())
-            bulk_save(self.path, self.Ov + self.Ta)
-            self.nf = self.n
-            if self.n < len(self.Ov):
-                self.n += 1
-                self.Review()
-            else:
-                self.close()
-
-    def subReview4(self):
-        self.Review(1)
+        self.R = WinR(self.path, self.deckName)
+        self.R.show()
 
     def Home(self):
         self.HomeSignal.emit('')
@@ -174,104 +122,150 @@ class WinCD(QMainWindow):
         self.close()
 
 
-class WinF(QMainWindow):
-    OKSignal = Signal()
-    BackSignal = Signal()
-    HomeSignal = Signal()
-
-    def __init__(self, parent, t: str, title: str) -> None:
-        super().__init__(parent=parent)
-        self.ui = WindowF()
+class WinR(QMainWindow):
+    def __init__(self, path, name) -> None:
+        super().__init__()
+        self.ui = WindowR()
         self.ui.setupUi(self)
-        self.ui.textEdit.setText(t)
-        if 'file:///' in t:
-            self.ui.textEdit.append("<img src=\"path\" />".replace('path', t.split('file:///')[-1]))
-            self.ui.textEdit.setFont(QFont([fontFamily], 4))
-        else:
-            self.ui.textEdit.setFont(QFont([fontFamily], 24))
-        self.t = t
-        self.ui.pushButton.clicked.connect(self.turn)
-        self.ui.actionBack.triggered.connect(self.back)
-        self.ui.actionHome.triggered.connect(self.home)
-        self.setWindowTitle(title)
-        self.ui.pushButton_2.clicked.connect(self.speak)
-        QShortcut(QKeySequence("Ctrl+S"), self).activated.connect(self.speak)
-        QShortcut(QKeySequence("Ctrl+F"), self).activated.connect(self.turn)
-        # self.setGeometry(0, 0, 1920, 1080)
-        # self.ui.textEdit.textChanged.connect(self.ui.textEdit.setText(self.t))
+        self.path = path
+        self.setWindowTitle(name)
+        self.status = 0  # 0:front;  1:back
+        self.Ov, self.Ta = bulk_load(self.path)
+        self.ui.lcdNumber.display(str(len(self.Ov)))
+        self.ui.lcdNumber_2.display(str(len(self.Ov) + len(self.Ta)))
+        self.ui.pushButton_2.clicked.connect(self.next)
+        self.ui.verticalSlider.valueChanged.connect(self.trace)
+        self.ui.pushButton_3.clicked.connect(self.delete)
+        self.ui.pushButton.clicked.connect(self.speak)
+        QShortcut(QKeySequence("S"), self).activated.connect(self.speak)
+        QShortcut(QKeySequence("Space"), self).activated.connect(self.next)
+        QShortcut(QKeySequence("Q"), self).activated.connect(self.trace1)
+        QShortcut(QKeySequence("W"), self).activated.connect(self.trace2)
+        QShortcut(QKeySequence("E"), self).activated.connect(self.trace3)
+        QShortcut(QKeySequence("R"), self).activated.connect(self.trace4)
+        QShortcut(QKeySequence("T"), self).activated.connect(self.trace5)
+        QShortcut(QKeySequence("Y"), self).activated.connect(self.trace6)
+        QShortcut(QKeySequence("U"), self).activated.connect(self.trace7)
+        QShortcut(QKeySequence("I"), self).activated.connect(self.trace8)
+        QShortcut(QKeySequence("O"), self).activated.connect(self.trace9)
+        QShortcut(QKeySequence("P"), self).activated.connect(self.trace0)
+        QShortcut(QKeySequence("Down"), self).activated.connect(self.traced)
+        QShortcut(QKeySequence("Up"), self).activated.connect(self.traceu)
+        self.displayFront()
 
     def speak(self):
-        engine.say(self.t.split('\n')[0])
+        engine.say(self.card.front().split('\n')[0])
         engine.runAndWait()
 
-    def home(self):
-        self.HomeSignal.emit()
-        self.close()
+    def delete(self):
+        self.Ov.remove(self.card)
+        bulk_save(self.path, self.Ov + self.Ta)
+        self.displayFront()
 
-    def back(self):
-        self.BackSignal.emit()
-        self.close()
+    def trace(self):
+        v = self.ui.verticalSlider.value()
+        if v == 100:
+            v = -0
+        self.ui.lcdNumber_3.display(v)
+    
+    def trace1(self):
+        self.ui.verticalSlider.setValue(10)
+        self.ui.lcdNumber_3.display(10)
 
-    def turn(self):
-        self.OKSignal.emit()
-        self.close()
+    def trace2(self):
+        self.ui.verticalSlider.setValue(20)
+        self.ui.lcdNumber_3.display(20)
 
+    def trace3(self):
+        self.ui.verticalSlider.setValue(30)
+        self.ui.lcdNumber_3.display(30)
 
-class WinB(QMainWindow):
-    Reviewed = Signal(float, str, str)
-    BackSignal = Signal()
-    HomeSignal = Signal()
+    def trace4(self):
+        self.ui.verticalSlider.setValue(40)
+        self.ui.lcdNumber_3.display(40)
 
-    def __init__(self, parent, tf: str, tb: str, title: str) -> None:
-        super().__init__(parent=parent)
-        self.ui = WindowB()
-        self.ui.setupUi(self)
-        self.ui.textEdit.setText(tf)
-        self.ui.textEdit_2.setText(tb)
-        if 'file:///' in tf:
-            self.ui.textEdit.append("<img src=\"path\" />".replace('path', tf.split('file:///')[-1]))
-            self.ui.textEdit.setFont(QFont([fontFamily], 4))
+    def trace5(self):
+        self.ui.verticalSlider.setValue(50)
+        self.ui.lcdNumber_3.display(50)
+
+    def trace6(self):
+        self.ui.verticalSlider.setValue(60)
+        self.ui.lcdNumber_3.display(60)
+
+    def trace7(self):
+        self.ui.verticalSlider.setValue(70)
+        self.ui.lcdNumber_3.display(70)
+
+    def trace8(self):
+        self.ui.verticalSlider.setValue(80)
+        self.ui.lcdNumber_3.display(80)
+
+    def trace9(self):
+        self.ui.verticalSlider.setValue(90)
+        self.ui.lcdNumber_3.display(90)
+
+    def trace0(self):
+        self.ui.verticalSlider.setValue(100)
+        self.ui.lcdNumber_3.display(100)
+
+    def traced(self):
+        self.ui.verticalSlider.setValue(self.ui.verticalSlider.value() - 1)
+        self.ui.lcdNumber_3.display(self.ui.verticalSlider.value())
+
+    def traceu(self):
+        self.ui.verticalSlider.setValue(self.ui.verticalSlider.value() + 1)
+        self.ui.lcdNumber_3.display(self.ui.verticalSlider.value())
+
+    def displayFront(self):
+        self.Ov, self.Ta = bulk_load(self.path)
+        self.Ov = sorted(self.Ov, key=lambda c: (c.S(), -c.R()))
+        if len(self.Ov) == 0:
+            self.close()
+        self.ui.lcdNumber.display(len(self.Ov))
+        self.ui.lcdNumber_2.display(len(self.Ov + self.Ta))
+        self.card: card = self.Ov[randint(0, min(3, len(self.Ov)))]
+        font = self.ui.fontComboBox.currentFont()
+        font.setPixelSize(self.ui.spinBox.value())
+        self.ui.textEdit.setFont(font)
+        self.ui.textEdit_2.setFont(font)
+        self.ui.textEdit.setText(self.card.front())
+        self.ui.textEdit_2.setText('')
+        self.ui.verticalSlider.setValue(40)
+        if self.ui.checkBox.isChecked():
+            self.ui.progressBar_2.setValue(int(self.card.S()*100))
+            self.ui.progressBar.setValue(int(self.card.Δ()))
         else:
-            self.ui.textEdit.setFont(QFont([fontFamily], 24))
-        if 'file:///' in tb:
-            self.ui.textEdit_2.append("<img src=\"path\" />".replace('path', tb.split('file:///')[-1]))
-            self.ui.textEdit_2.setFont(QFont([fontFamily], 4))
-        else:
-            self.ui.textEdit_2.setFont(QFont([fontFamily], 24))
-        self.ui.pushButton.clicked.connect(self.next)
-        self.ui.verticalSlider.valueChanged.connect(self.percent)
-        self.ui.actionBack.triggered.connect(self.back)
-        self.ui.actionHome.triggered.connect(self.home)
-        self.ui.pushButton_3.clicked.connect(self.delet)
-        self.setWindowTitle(title)
-        QShortcut(QKeySequence("Ctrl+Enter"), self).activated.connect(self.next)
-        QShortcut(QKeySequence("Ctrl+Delete"), self).activated.connect(self.delet)
+            self.ui.progressBar_2.setValue(0)
+            self.ui.progressBar.setValue(0)
+        if self.ui.checkBox_2.isChecked():
+            engine.say(self.card.front().split('\n')[0])
+            engine.runAndWait()
+        self.status = 1
 
-    def delet(self):
-        v = 748.0
-        F = self.ui.textEdit.toPlainText().replace('\n\ufffc', '')
-        B = self.ui.textEdit_2.toPlainText().replace('\n\ufffc', '')
-        self.Reviewed.emit(v, F, B)
-        self.close()
+    def displayBack(self):
+        self.ui.textEdit_2.setText(self.card.back())
+        self.status = 0
 
-    def back(self):
-        self.BackSignal.emit()
-        self.close()
-
-    def home(self):
-        self.HomeSignal.emit()
-        self.close()
-
-    def percent(self):
-        v = str(self.ui.verticalSlider.value()) + '%'
-        self.ui.label_3.setText(v)
+    def reviewed(self):
+        v = self.ui.verticalSlider.value()
+        S, Δ = self.card.review(v)
+        self.card.setFront(self.ui.textEdit.toPlainText().replace('\n\ufffc', ''))
+        self.card.setBack(self.ui.textEdit_2.toPlainText().replace('\n\ufffc', ''))
+        bulk_save(self.path, self.Ov + self.Ta)
+        self.ui.progressBar_2.setValue(S)
+        self.ui.progressBar.setValue(Δ)
+        sleep(0.5)
+        self.displayFront()
 
     def next(self):
-        v = self.ui.verticalSlider.value()
-        F = self.ui.textEdit.toPlainText().replace('\n\ufffc', '')
-        B = self.ui.textEdit_2.toPlainText().replace('\n\ufffc', '')
-        self.Reviewed.emit(v, F, B)
-        self.close()
+        if self.status == 0:
+            self.reviewed()
+        else:
+            self.displayBack()
+        
+
+
+
 
 
 class WinDT(QMainWindow):

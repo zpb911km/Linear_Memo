@@ -1,17 +1,15 @@
 # 现在在上python课，太他妈无聊了，于是决定从此开始写注释
 from math import log
 from datetime import datetime
-from requests import get
-from bs4 import BeautifulSoup
 from os import system
 from random import randint, sample
+from time import sleep
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
 Ω = 0.95  # 经验权重，常数
 Rchecktime = 150  # R==1时，抽查底数
 MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调？）
-PATH = r'E:\myfiles\python\Linear_Memo\src\LMFiles\test.nmf'
 
 
 class card():
@@ -88,15 +86,15 @@ class card():
     def R(self) -> str:
         return self.basedata[6]
 
-    def review(self, feedback: float) -> (float, float):  # 返回值表示是否解除过期状态
-        '''返回[0,100]'''
+    def review(self, feedback: float) -> bool:  # 返回值表示是否解除过期状态
+        '''返回[1,100]'''
         if abs(feedback - 100) <= 0.00000000000001:
             self.basedata[6] = 2
-            return (100, self.basedata[5])
+            return None
         if abs(feedback - 0) <= 0.00000000000001:
             self.basedata[2] = datetime.now().strftime(DTFormat)
             self.basedata[5] = 1
-            return (self.basedata[4]*100, self.basedata[5])
+            return None
         # 核心三句
         S = Ω * feedback + (1 - Ω) * self.basedata[4]*100
         Δ = self.basedata[5] * log(ForgetLine + self.basedata[3])/log(S/100)
@@ -122,7 +120,8 @@ class card():
             self.basedata[5] = Δ
             self.basedata[2] = T
             self.basedata[6] = 0
-        # print(Δ)
+        print(Δ)
+        sleep(0.5)
         if Δ <= 0:
             Δ = -Δ + 0.01
         if Δ > 1:
@@ -130,12 +129,12 @@ class card():
             self.basedata[5] = Δ
             self.basedata[2] = T
             self.basedata[6] = R
-            return (S, Δ)
+            return True
         else:
             self.basedata[4] = S/100
             self.basedata[5] = Δ
             self.basedata[6] = R
-            return (S, Δ)
+            return False
 
 
 def bulk_load(path) -> (list[card], list[card]):
@@ -164,95 +163,35 @@ def bulk_save(path, clist):
         file.write(text[:-1])
 
 
-def rev_loop(Ov: list[card], Ta: list[card]):
-    # 复习
+def rev_loop():
+    # 复习循环
+    Ov, Ta = bulk_load(r"./#current.nmf")
     for c in sample(Ov, len(Ov)):
-        system('cls')
+        system('clear')
+        print(len(Ov), len(Ov) + len(Ta))
         print(c.front())
         input()
-        system('cls')
+        system('clear')
+        print(len(Ov), len(Ov) + len(Ta))
         print(c.front() + '\n\n' + c.back())
-        feedback = int(input(':')) * 10
+        print(str(c.S()) + '\n' + str(c.Δ()))
+        while True:
+            feedback = float(input(':')) * 10
+            if feedback > 100 or feedback < 0:
+                continue
+            else:
+                break
         if c.review(feedback):
             Ta.append(c)
             Ov.remove(c)
-    return Ov, Ta
-
-
-def Replace(text):
-    rpl = [
-        ['，', ','],
-        ['。', '.'],
-        ['：', ':'],
-        ['；', ';'],
-        ['（', '('],
-        ['）', ')'],
-        ['……', '...'],
-        ['、', ','],
-        ['！', '!'],
-        ['？', '?'],
-        ['“', '"'],
-        ['”', '"'],
-        ['【', '['],
-        ['】', ']'],
-        ['`', '·'],
-        ['<=', '≤'],
-        ['>=', '≥']
-    ]
-    for pair in rpl:
-        text = text.replace(pair[0], pair[1])
-    return text
-
-
-def word_inquiry(word: str):
-    url = f'https://cn.bing.com/dict/search?q={word}'
-
-    web = get(url)
-    t = BeautifulSoup(web.content, 'lxml')
-    ans = t.head.find_all("meta")[3].attrs['content'].split('，')
-
-    word = ans[0].split('必应词典为您提供')[-1]
-    word = word.split('的释义')[0]
-    try:
-        pronun = ans[1] + '  ' + ans[2]
-    except Exception:
-        if len(word.split(' ')) > 1:
-            pronun = ' '
-            pass
-        else:
-            raise Exception('No such word!!')
-
-    outputA = str('')
-    outputA += word + '<br />' + pronun + '\t'
-
-    try:
-        meaning = t.body.find('div', 'contentPadding')\
-                    .find('div', 'content', 'b_cards')\
-                    .find('div', 'rs_area', 'b_cards')\
-                    .find('div', 'lf_area')\
-                    .find('div', 'qdef')\
-                    .find('ul')\
-                    .find_all('li')
-    except AttributeError:
-        raise Exception('No such word!!')
-
-    for line in meaning:
-        prop = line.find('span', 'pos').string.strip()
-        mean = line.find('span', 'def', 'b_regtxt').find('span').string.strip()
-        if '网' in prop:
-            prop = '网:'
-        if line == meaning[-1]:
-            outputA += Replace(prop) + Replace(mean)
-        else:
-            outputA += Replace(prop) + Replace(mean) + '<br />'
-    return outputA
+        bulk_save(r"./#current.nmf", Ov + Ta)
 
 
 if __name__ == '__main__':
-    PATH = "E:\\我的大学\\Personal\\LMFiles\\current.nmf"
-    OverdueCardList, TaciturnCardList = bulk_load(PATH)
+    PATH = r"./#current.nmf"
     try:
-        OverdueCardList, TaciturnCardList = rev_loop(OverdueCardList, TaciturnCardList)
+        rev_loop()
     except KeyboardInterrupt:
         pass
-    bulk_save(PATH, OverdueCardList + TaciturnCardList)
+    system('clear')
+    print('bye')
