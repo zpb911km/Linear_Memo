@@ -223,12 +223,17 @@ class WinR(QMainWindow):
         self.ui.lcdNumber.display(len(self.Ov))
         self.ui.lcdNumber_2.display(len(self.Ov + self.Ta))
         self.card: card = self.Ov[randint(0, min(3, len(self.Ov)))]
-        font = self.ui.fontComboBox.currentFont()
-        font.setPixelSize(self.ui.spinBox.value())
-        self.ui.textEdit.setFont(font)
-        self.ui.textEdit_2.setFont(font)
         self.ui.textEdit.setText(self.card.front())
         self.ui.textEdit_2.setText('')
+        if 'file:///' in self.card.front():
+            self.ui.textEdit.append("<img src=\"path\" />".replace('path', self.card.front().split('file:///')[-1]))
+            font = self.ui.fontComboBox.currentFont()
+            font.setPixelSize(10)
+            self.ui.textEdit.setFont(font)
+        else:
+            font = self.ui.fontComboBox.currentFont()
+            font.setPixelSize(self.ui.spinBox.value())
+            self.ui.textEdit.setFont(font)
         self.ui.verticalSlider.setValue(40)
         if self.ui.checkBox.isChecked():
             self.ui.progressBar_2.setValue(int(self.card.S()*100))
@@ -237,12 +242,25 @@ class WinR(QMainWindow):
             self.ui.progressBar_2.setValue(0)
             self.ui.progressBar.setValue(0)
         if self.ui.checkBox_2.isChecked():
+            QShortcut(QKeySequence("Space"), self).activated.disconnect(self.next)
+            self.ui.pushButton_2.clicked.disconnect(self.next)
             engine.say(self.card.front().split('\n')[0])
             engine.runAndWait()
+            QShortcut(QKeySequence("Space"), self).activated.connect(self.next)
+            self.ui.pushButton_2.clicked.connect(self.next)
         self.status = 1
 
     def displayBack(self):
         self.ui.textEdit_2.setText(self.card.back())
+        if 'file:///' in self.card.back():
+            self.ui.textEdit_2.append("<img src=\"path\" />".replace('path', self.card.back().split('file:///')[-1]))
+            font = self.ui.fontComboBox.currentFont()
+            font.setPixelSize(10)
+            self.ui.textEdit_2.setFont(font)
+        else:
+            font = self.ui.fontComboBox.currentFont()
+            font.setPixelSize(self.ui.spinBox.value())
+            self.ui.textEdit_2.setFont(font)
         self.status = 0
 
     def reviewed(self):
@@ -252,7 +270,7 @@ class WinR(QMainWindow):
         self.card.setBack(self.ui.textEdit_2.toPlainText().replace('\n\ufffc', ''))
         bulk_save(self.path, self.Ov + self.Ta)
         self.ui.progressBar_2.setValue(S)
-        self.ui.progressBar.setValue(Δ)
+        self.ui.progressBar.setValue(min(Δ, 300))
         sleep(0.5)
         self.displayFront()
 
