@@ -12,6 +12,7 @@ from random import randint
 import os
 import pyttsx3
 from time import sleep
+import threading
 
 engine = pyttsx3.init()
 engine.setProperty('rate', 120)
@@ -19,6 +20,7 @@ engine.setProperty('volume', 1.0)
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[1].id)
 fontFamily = u"msyh"
+globalCounter = 0
 
 
 class WinAC(QMainWindow):
@@ -150,6 +152,7 @@ class WinR(QMainWindow):
         QShortcut(QKeySequence("P"), self).activated.connect(self.trace0)
         QShortcut(QKeySequence("Down"), self).activated.connect(self.traced)
         QShortcut(QKeySequence("Up"), self).activated.connect(self.traceu)
+        # 真他妈蠢爆了
         self.displayFront()
 
     def speak(self):
@@ -215,6 +218,8 @@ class WinR(QMainWindow):
         self.ui.verticalSlider.setValue(self.ui.verticalSlider.value() + 1)
         self.ui.lcdNumber_3.display(self.ui.verticalSlider.value())
 
+    # 什么他妈的叫他妈的蠢爆了
+
     def displayFront(self):
         self.Ov, self.Ta = bulk_load(self.path)
         self.Ov = sorted(self.Ov, key=lambda c: (c.S(), -c.R()))
@@ -222,9 +227,9 @@ class WinR(QMainWindow):
             self.close()
         self.ui.lcdNumber.display(len(self.Ov))
         self.ui.lcdNumber_2.display(len(self.Ov + self.Ta))
-        self.card: card = self.Ov[randint(0, min(3, len(self.Ov)))]
+        self.card: card = self.Ov[randint(0, min(10, len(self.Ov)))]
         self.ui.textEdit.setText(self.card.front())
-        self.ui.textEdit_2.setText('')
+        self.ui.textEdit_2.setText('(说出卡片背面)')
         if 'file:///' in self.card.front():
             self.ui.textEdit.append("<img src=\"path\" />".replace('path', self.card.front().split('file:///')[-1]))
             font = self.ui.fontComboBox.currentFont()
@@ -236,18 +241,26 @@ class WinR(QMainWindow):
             self.ui.textEdit.setFont(font)
         self.ui.verticalSlider.setValue(40)
         if self.ui.checkBox.isChecked():
-            self.ui.progressBar_2.setValue(int(self.card.S()*100))
-            self.ui.progressBar.setValue(int(self.card.Δ()))
+            self.ui.label.setText('|S='+str(self.card.S()))
+            self.ui.label_2.setText('Δ='+str(self.card.Δ()))
+            if self.card.R() == 0:
+                tempstr = '......'
+            elif self.card.R() == 1:
+                tempstr = '!!!!!!'
+            else:
+                tempstr = '??????'
+            self.ui.label_3.setText(tempstr)
         else:
-            self.ui.progressBar_2.setValue(0)
-            self.ui.progressBar.setValue(0)
+            self.ui.label.setText(' ')
+            self.ui.label_2.setText(' ')
+            self.ui.label_3.setText(' ')
         if self.ui.checkBox_2.isChecked():
-            QShortcut(QKeySequence("Space"), self).activated.disconnect(self.next)
-            self.ui.pushButton_2.clicked.disconnect(self.next)
-            engine.say(self.card.front().split('\n')[0])
-            engine.runAndWait()
-            QShortcut(QKeySequence("Space"), self).activated.connect(self.next)
-            self.ui.pushButton_2.clicked.connect(self.next)
+            try:
+                task.join()
+            except Exception:
+                pass
+            task = threading.Thread(target=self.speak)
+            task.start()
         self.status = 1
 
     def displayBack(self):
@@ -265,13 +278,15 @@ class WinR(QMainWindow):
 
     def reviewed(self):
         v = self.ui.verticalSlider.value()
-        S, Δ = self.card.review(v)
-        self.card.setFront(self.ui.textEdit.toPlainText().replace('\n\ufffc', ''))
-        self.card.setBack(self.ui.textEdit_2.toPlainText().replace('\n\ufffc', ''))
+        self.card.review(v)
+        if len(self.ui.textEdit.toPlainText().replace('\n\ufffc', '')) > 0:
+            self.card.setFront(self.ui.textEdit.toPlainText().replace('\n\ufffc', ''))
+        if len(self.ui.textEdit_2.toPlainText().replace('\n\ufffc', '')) > 0:
+            self.card.setBack(self.ui.textEdit_2.toPlainText().replace('\n\ufffc', ''))
         bulk_save(self.path, self.Ov + self.Ta)
-        self.ui.progressBar_2.setValue(S)
-        self.ui.progressBar.setValue(min(Δ, 300))
-        sleep(0.5)
+        global globalCounter
+        globalCounter += 1
+        self.ui.lcdNumber_4.display(globalCounter)
         self.displayFront()
 
     def next(self):

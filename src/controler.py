@@ -7,7 +7,7 @@ from os import system
 from random import randint, sample
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
-Ω = 0.95  # 经验权重，常数
+Ω = 0.99  # 经验权重，常数
 Rchecktime = 150  # R==1时，抽查底数
 MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调？）
@@ -79,17 +79,17 @@ class card():
     def setBack(self, text) -> None:
         self.basedata[1] = text.replace('\n', '<br />')
 
-    def S(self) -> str:
+    def S(self) -> float:
         return self.basedata[4]
 
-    def Δ(self) -> str:
+    def Δ(self) -> float:
         return self.basedata[5]
 
-    def R(self) -> str:
+    def R(self) -> int:
         return self.basedata[6]
 
     def review(self, feedback: float) -> (float, float):  # 返回值表示是否解除过期状态
-        '''返回[0,100]'''
+        '''feedback∈[0,100]'''
         if abs(feedback - 100) <= 0.00000000000001:
             self.basedata[6] = 2
             return (100, self.basedata[5])
@@ -108,20 +108,20 @@ class card():
         # 判断永久记忆是否退化
         if R == 1 and Δ < MaxCalcLimit * 0.8:
             R = 0
-            S = 20
+            S = 40
             Δ = 1
             self.basedata[4] = S/100
             self.basedata[5] = Δ
             self.basedata[2] = T
             self.basedata[6] = R
-        if R == 2 and feedback <= 30:
+        if R == 2 and feedback <= 40:
             R = 0
-            S = 20
+            S = 40
             Δ = 1
             self.basedata[4] = S/100
             self.basedata[5] = Δ
             self.basedata[2] = T
-            self.basedata[6] = 0
+            self.basedata[6] = R
         # print(Δ)
         if Δ <= 0:
             Δ = -Δ + 0.01
@@ -205,6 +205,7 @@ def Replace(text):
 
 
 def word_inquiry(word: str):
+    # bing 查单词
     url = f'https://cn.bing.com/dict/search?q={word}'
 
     web = get(url)

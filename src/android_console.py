@@ -6,7 +6,7 @@ from random import randint, sample
 from time import sleep
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
-Ω = 0.95  # 经验权重，常数
+Ω = 0.9  # 经验权重，常数
 Rchecktime = 150  # R==1时，抽查底数
 MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调？）

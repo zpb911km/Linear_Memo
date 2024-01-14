@@ -16,24 +16,23 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMainWindow,
-    QMenu, QMenuBar, QPushButton, QSizePolicy,
-    QSpacerItem, QStatusBar, QTextEdit, QVBoxLayout,
-    QWidget)
+from PySide6.QtWidgets import (QApplication, QLabel, QMainWindow, QMenu,
+    QMenuBar, QPushButton, QSizePolicy, QStatusBar,
+    QTextEdit, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(697, 630)
         self.actionBack = QAction(MainWindow)
         self.actionBack.setObjectName(u"actionBack")
         self.actionHome = QAction(MainWindow)
         self.actionHome.setObjectName(u"actionHome")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.horizontalLayout = QHBoxLayout(self.centralwidget)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.verticalLayout_2 = QVBoxLayout(self.centralwidget)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.label = QLabel(self.centralwidget)
@@ -64,40 +63,27 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.textEdit_2)
 
 
-        self.horizontalLayout.addLayout(self.verticalLayout)
-
-        self.verticalLayout_2 = QVBoxLayout()
-        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.verticalLayout_2.addItem(self.verticalSpacer)
-
-        self.pushButton_2 = QPushButton(self.centralwidget)
-        self.pushButton_2.setObjectName(u"pushButton_2")
-
-        self.verticalLayout_2.addWidget(self.pushButton_2)
+        self.verticalLayout_2.addLayout(self.verticalLayout)
 
         self.pushButton = QPushButton(self.centralwidget)
         self.pushButton.setObjectName(u"pushButton")
 
         self.verticalLayout_2.addWidget(self.pushButton)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.pushButton_2 = QPushButton(self.centralwidget)
+        self.pushButton_2.setObjectName(u"pushButton_2")
 
-        self.verticalLayout_2.addItem(self.verticalSpacer_3)
+        self.verticalLayout_2.addWidget(self.pushButton_2)
 
         self.pushButton_3 = QPushButton(self.centralwidget)
         self.pushButton_3.setObjectName(u"pushButton_3")
 
         self.verticalLayout_2.addWidget(self.pushButton_3)
 
-
-        self.horizontalLayout.addLayout(self.verticalLayout_2)
-
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 800, 22))
+        self.menubar.setGeometry(QRect(0, 0, 697, 22))
         self.menuHome = QMenu(self.menubar)
         self.menuHome.setObjectName(u"menuHome")
         MainWindow.setMenuBar(self.menubar)
@@ -119,8 +105,8 @@ class Ui_MainWindow(object):
         self.actionHome.setText(QCoreApplication.translate("MainWindow", u"Home", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Front:", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Back:", None))
-        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Word Inquiry", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Add", None))
+        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Word Inquiry", None))
         self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Cancel", None))
         self.menuHome.setTitle(QCoreApplication.translate("MainWindow", u"Home", None))
     # retranslateUi
