@@ -3,7 +3,7 @@ from UI.Add_Card import Ui_MainWindow as WindowAC
 from UI.Chosen_Deck import Ui_MainWindow as WindowCD
 from UI.review import Ui_MainWindow as WindowR
 from UI.Detail import Ui_MainWindow as WindowDT
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide6.QtGui import QFont, QShortcut, QKeySequence
 import webbrowser
@@ -11,7 +11,6 @@ from controler import bulk_load, bulk_save, card, word_inquiry
 from random import randint
 import os
 import pyttsx3
-from time import sleep
 import threading
 
 engine = pyttsx3.init()
@@ -229,7 +228,8 @@ class WinR(QMainWindow):
         self.ui.lcdNumber_2.display(len(self.Ov + self.Ta))
         self.card: card = self.Ov[randint(0, min(10, len(self.Ov)))]
         self.ui.textEdit.setText(self.card.front())
-        self.ui.textEdit_2.setText('(说出卡片背面)')
+        self.ui.textEdit_2.setText('')
+        self.ui.textEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if 'file:///' in self.card.front():
             self.ui.textEdit.append("<img src=\"path\" />".replace('path', self.card.front().split('file:///')[-1]))
             font = self.ui.fontComboBox.currentFont()

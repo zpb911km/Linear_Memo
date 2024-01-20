@@ -7,11 +7,55 @@ from os import system
 from random import randint, sample
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
-Ω = 0.99  # 经验权重，常数
+Ω = 0.95  # 经验权重，常数
 Rchecktime = 150  # R==1时，抽查底数
 MaxCalcLimit = 300  # R==1的判断条件
-ForgetLine = 0.4  # 遗忘标准（可调？）
+ForgetLine = 0.4  # 遗忘标准（可调）
 PATH = r'E:\myfiles\python\Linear_Memo\src\LMFiles\test.nmf'
+
+
+# 计算数列
+def listcalc(l1, calc, l2) -> list:
+    out = []
+    if isinstance(l2, list):
+        match calc:
+            case '+':
+                for num in range(len(l1)):
+                    out.append(l1[num] + l2[num])
+            case '-':
+                for num in range(len(l1)):
+                    out.append(l1[num] - l2[num])
+            case '*':
+                for num in range(len(l1)):
+                    out.append(l1[num] * l2[num])
+            case '/':
+                for num in range(len(l1)):
+                    out.append(l1[num] / l2[num])
+    else:
+        match calc:
+            case '+':
+                for num in range(len(l1)):
+                    out.append(l1[num] + l2)
+            case '-':
+                for num in range(len(l1)):
+                    out.append(l1[num] - l2)
+            case '*':
+                for num in range(len(l1)):
+                    out.append(l1[num] * l2)
+            case '/':
+                for num in range(len(l1)):
+                    out.append(l1[num] / l2)
+            case '**':
+                for num in range(len(l1)):
+                    out.append(l1[num] ** l2)
+    return out
+
+
+def OLS(x, y) -> float:
+    k = (sum(listcalc(x, '*', y)) - sum(x) * sum(y) / len(x)) / (sum(listcalc(x, '*', x)) - (sum(x)**2)/len(x))
+    b = sum(y) / len(y) - k * sum(x) / len(x)
+    Rs = 1 - sum(listcalc(listcalc(y, '-', listcalc(listcalc(x, '*', k), '+', b)), '**', 2)) / sum(listcalc(listcalc(y, '-', (sum(y) / len(y))), '**', 2))
+    return k, b, Rs
 
 
 class card():
@@ -25,8 +69,8 @@ class card():
         判过期
     '''
     # 给card对象多一些抽象，方便表达
-    def __init__(self, F: str = '', B: str = '', T: str = datetime.now().strftime(DTFormat), D: float = 0.0, S: float = 0.4, Δ: float = 1, R: int = 0) -> None:
-        self.basedata = [F.lower(), B, T, D, S, Δ, R]
+    def __init__(self, F: str = '', B: str = '', T: str = datetime.now().strftime(DTFormat), H: str = '{:.2f}'.format(ForgetLine), S: float = 0.4, Δ: float = 1, R: int = 0) -> None:
+        self.basedata = [F.lower(), B, T, H, S, Δ, R]
         # 对位：         0，        1，2，3，4，5，6
         # 我也不想做如此愚蠢的操作啊
 
@@ -43,7 +87,7 @@ class card():
         self.basedata[0] = templist[0]
         self.basedata[1] = templist[1]
         self.basedata[2] = templist[2]
-        self.basedata[3] = float(templist[3])
+        self.basedata[3] = templist[3]
         self.basedata[4] = float(templist[4])
         self.basedata[5] = float(templist[5])
         self.basedata[6] = int(templist[6])
@@ -97,9 +141,16 @@ class card():
             self.basedata[2] = datetime.now().strftime(DTFormat)
             self.basedata[5] = 1
             return (self.basedata[4]*100, self.basedata[5])
+        self.basedata[3] += ',{:.2f}'.format(feedback / 100)
+        # 线性回归求bias
+        y = self.basedata[3].split(',')
+        x = [i/len(y) for i in range(y)]
+        k, _, Rs = OLS(x, y)
+        bias = 0.4 * (0.6 - k) + 0.1 * abs(1 - Rs)
+        # 线性回归求bias
         # 核心三句
-        S = Ω * feedback + (1 - Ω) * self.basedata[4]*100
-        Δ = self.basedata[5] * log(ForgetLine + self.basedata[3])/log(S/100)
+        S = Ω * feedback + (1 - Ω) * self.basedata[4] * 100
+        Δ = self.basedata[5] * log(ForgetLine + bias) / log(S / 100)
         T = datetime.now().strftime(DTFormat)
         if Δ > MaxCalcLimit:
             R = 1
@@ -122,7 +173,6 @@ class card():
             self.basedata[5] = Δ
             self.basedata[2] = T
             self.basedata[6] = R
-        # print(Δ)
         if Δ <= 0:
             Δ = -Δ + 0.01
         if Δ > 1:
@@ -155,7 +205,7 @@ def bulk_load(path) -> (list[card], list[card]):
     return (Ov, Ta)
 
 
-def bulk_save(path, clist):
+def bulk_save(path, clist: list[card]):
     # 批量导出数据
     text = ''
     for c in clist:
@@ -214,17 +264,9 @@ def word_inquiry(word: str):
 
     word = ans[0].split('必应词典为您提供')[-1]
     word = word.split('的释义')[0]
-    try:
-        pronun = ans[1] + '  ' + ans[2]
-    except Exception:
-        if len(word.split(' ')) > 1:
-            pronun = ' '
-            pass
-        else:
-            raise Exception('No such word!!')
 
     outputA = str('')
-    outputA += word + '<br />' + pronun + '\t'
+    outputA += word
 
     try:
         meaning = t.body.find('div', 'contentPadding')\
