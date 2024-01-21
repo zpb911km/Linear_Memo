@@ -475,7 +475,7 @@ class MainWindow(QMainWindow):
         self.Select()
 
     def deletDeck(self):
-        os.rename(self.selectedDeck, self.selectedDeck.replace('nmf', 'txt'))
+        os.rename(self.selectedDeck, self.selectedDeck.replace('NMF', 'txt'))
         del self.DeckDict[self.selectedDeck.split('\\')[-1].split('.')[0]]
         t = 'index\tname\t\tOvertime\tTaciturn\n'
         for num, name in enumerate(self.DeckDict.keys()):

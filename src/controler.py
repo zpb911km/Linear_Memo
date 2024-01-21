@@ -143,8 +143,8 @@ class card():
             return (self.basedata[4]*100, self.basedata[5])
         self.basedata[3] += ',{:.2f}'.format(feedback / 100)
         # 线性回归求bias
-        y = self.basedata[3].split(',')
-        x = [i/len(y) for i in range(y)]
+        y = [float(i) for i in self.basedata[3].split(',')]
+        x = [i/len(y) for i in range(1, len(y) + 1)]
         k, _, Rs = OLS(x, y)
         bias = 0.4 * (0.6 - k) + 0.1 * abs(1 - Rs)
         # 线性回归求bias
