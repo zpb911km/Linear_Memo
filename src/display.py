@@ -82,11 +82,14 @@ class WinCD(QMainWindow):
         self.Ov, self.Ta = bulk_load(self.path)
         self.ui.label_4.setText(str(len(self.Ov)))
         self.ui.label_5.setText(str(len(self.Ov) + len(self.Ta)))
-        self.ui.pushButton_2.clicked.connect(self.Review)
+        if len(self.Ov) == 0:
+            self.ui.pushButton_2.setEnabled(False)
+        else:
+            self.ui.pushButton_2.clicked.connect(self.Review)
+            QShortcut(QKeySequence("Ctrl+R"), self).activated.connect(self.Review)
         self.ui.actionHome.triggered.connect(self.Home)
         self.ui.pushButton_3.clicked.connect(self.Detail)
         self.ui.pushButton.clicked.connect(self.AddCard)
-        QShortcut(QKeySequence("Ctrl+R"), self).activated.connect(self.Review)
         QShortcut(QKeySequence("Ctrl+A"), self).activated.connect(self.AddCard)
         QShortcut(QKeySequence("Ctrl+D"), self).activated.connect(self.Detail)
 
@@ -110,9 +113,6 @@ class WinCD(QMainWindow):
         self.D.show()
 
     def Review(self):  # review
-        self.Ov, self.Ta = bulk_load(self.path)
-        self.ui.label_4.setText(str(len(self.Ov)))
-        self.ui.label_5.setText(str(len(self.Ov) + len(self.Ta)))
         self.R = WinR(self.path, self.deckName)
         self.R.show()
 
@@ -129,8 +129,11 @@ class WinR(QMainWindow):
         self.ui.setupUi(self)
         self.path = path
         self.setWindowTitle(name)
+        self.name = name
         self.status = 0  # 0:front;  1:back
         self.Ov, self.Ta = bulk_load(self.path)
+        if len(self.Ov) == 0:
+            os.system('mshta vbscript:msgbox("当前牌组复习完成",16,' + self.name + ')(window.close)')
         self.ui.lcdNumber.display(str(len(self.Ov)))
         self.ui.lcdNumber_2.display(str(len(self.Ov) + len(self.Ta)))
         self.ui.pushButton_2.clicked.connect(self.next)
@@ -166,7 +169,7 @@ class WinR(QMainWindow):
     def trace(self):
         v = self.ui.verticalSlider.value()
         if v == 100:
-            v = -0
+            v = -1
         self.ui.lcdNumber_3.display(v)
 
     def trace1(self):
@@ -207,7 +210,7 @@ class WinR(QMainWindow):
 
     def trace0(self):
         self.ui.verticalSlider.setValue(100)
-        self.ui.lcdNumber_3.display(100)
+        self.ui.lcdNumber_3.display(-1)
 
     def traced(self):
         self.ui.verticalSlider.setValue(self.ui.verticalSlider.value() - 1)
@@ -224,9 +227,10 @@ class WinR(QMainWindow):
         self.Ov = sorted(self.Ov, key=lambda c: (c.S(), -c.R()))
         if len(self.Ov) == 0:
             self.close()
+            os.system('mshta vbscript:msgbox("当前牌组复习完成",16,' + self.name + ')(window.close)')
         self.ui.lcdNumber.display(len(self.Ov))
         self.ui.lcdNumber_2.display(len(self.Ov + self.Ta))
-        self.card: card = self.Ov[randint(0, min(10, len(self.Ov)))]
+        self.card: card = self.Ov[randint(0, min(10, len(self.Ov)-1))]
         self.ui.textEdit.setText(self.card.front())
         self.ui.textEdit_2.setText('')
         self.ui.textEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)

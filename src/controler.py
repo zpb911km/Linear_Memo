@@ -266,7 +266,7 @@ def word_inquiry(word: str):
     word = word.split('的释义')[0]
 
     outputA = str('')
-    outputA += word
+    outputA += word + '\t'
 
     try:
         meaning = t.body.find('div', 'contentPadding')\
