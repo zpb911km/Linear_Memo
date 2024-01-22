@@ -133,7 +133,8 @@ class WinR(QMainWindow):
         self.status = 0  # 0:front;  1:back
         self.Ov, self.Ta = bulk_load(self.path)
         if len(self.Ov) == 0:
-            os.system('mshta vbscript:msgbox("当前牌组复习完成",16,' + self.name + ')(window.close)')
+            os.system('mshta vbscript:msgbox("当前牌组复习完成",16,"' + self.name + '")(window.close)')
+            self.close()
         self.ui.lcdNumber.display(str(len(self.Ov)))
         self.ui.lcdNumber_2.display(str(len(self.Ov) + len(self.Ta)))
         self.ui.pushButton_2.clicked.connect(self.next)
@@ -226,8 +227,9 @@ class WinR(QMainWindow):
         self.Ov, self.Ta = bulk_load(self.path)
         self.Ov = sorted(self.Ov, key=lambda c: (c.S(), -c.R()))
         if len(self.Ov) == 0:
+            os.system('mshta vbscript:msgbox("当前牌组复习完成",16,"' + self.name + '")(window.close)')
             self.close()
-            os.system('mshta vbscript:msgbox("当前牌组复习完成",16,' + self.name + ')(window.close)')
+            return None
         self.ui.lcdNumber.display(len(self.Ov))
         self.ui.lcdNumber_2.display(len(self.Ov + self.Ta))
         self.card: card = self.Ov[randint(0, min(10, len(self.Ov)-1))]
