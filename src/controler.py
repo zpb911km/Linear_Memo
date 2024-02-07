@@ -5,6 +5,7 @@ from requests import get
 from bs4 import BeautifulSoup
 from os import system
 from random import randint, sample
+import os
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
 Ω = 0.95  # 经验权重，常数
@@ -55,7 +56,8 @@ def OLS(x, y) -> float:
     k = (sum(listcalc(x, '*', y)) - sum(x) * sum(y) / len(x)) / (sum(listcalc(x, '*', x)) - (sum(x)**2)/len(x))
     b = sum(y) / len(y) - k * sum(x) / len(x)
     Rs = 1 - sum(listcalc(listcalc(y, '-', listcalc(listcalc(x, '*', k), '+', b)), '**', 2)) / sum(listcalc(listcalc(y, '-', (sum(y) / len(y))), '**', 2))
-    return k, b, Rs
+    Ss = sum(listcalc(listcalc(y, '-', listcalc(listcalc(x, '*', k), '+', b)), '**', 2)) / sum(listcalc(listcalc(y, '-', (sum(y) / len(y))), '**', 2))
+    return k, b, Rs, Ss
 
 
 class card():
@@ -132,7 +134,7 @@ class card():
     def R(self) -> int:
         return self.basedata[6]
 
-    def review(self, feedback: float) -> (float, float):  # 返回值表示是否解除过期状态
+    def review(self, feedback: float) -> tuple[float, float]:  # 返回值表示是否解除过期状态
         '''feedback∈[0,100]'''
         if abs(feedback - 100) <= 0.00000000000001:
             self.basedata[6] = 2
@@ -144,9 +146,13 @@ class card():
         self.basedata[3] += ',{:.2f}'.format(feedback / 100)
         # 线性回归求bias
         y = [float(i) for i in self.basedata[3].split(',')]
-        x = [i/len(y) for i in range(1, len(y) + 1)]
-        k, _, Rs = OLS(x, y)
-        bias = 0.4 * (0.6 - k) + 0.1 * abs(1 - Rs)
+        if len(y) <= 20:  # 新卡片保护
+            bias = 0
+        else:
+            x = [i/len(y) for i in range(1, len(y) + 1)]
+            _, _, _, Ss = OLS(x, y)
+            bias = (Ss - 0.5) * 0.1
+            os.system('mshta vbscript:msgbox("!!!!!卡片旧了!!!!!",16,"卡片烂了")(window.close)')
         # 线性回归求bias
         # 核心三句
         S = Ω * feedback + (1 - Ω) * self.basedata[4] * 100
@@ -188,7 +194,7 @@ class card():
             return (S, Δ)
 
 
-def bulk_load(path) -> (list[card], list[card]):
+def bulk_load(path) -> tuple[list[card], list[card]]:
     # 批量导入数据
     with open(path, 'r', encoding='UTF-8') as file:
         txt = file.read()

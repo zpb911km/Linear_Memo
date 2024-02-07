@@ -160,7 +160,10 @@ class WinR(QMainWindow):
 
     def speak(self):
         engine.say(self.card.front().split('\n')[0])
-        engine.runAndWait()
+        try:
+            engine.runAndWait()
+        except RuntimeError:
+            print("too fast to speak!")
 
     def delete(self):
         self.Ov.remove(self.card)
@@ -260,6 +263,10 @@ class WinR(QMainWindow):
             self.ui.label.setText(' ')
             self.ui.label_2.setText(' ')
             self.ui.label_3.setText(' ')
+        global globalCounter
+        if globalCounter == 0 and self.ui.checkBox_2.isChecked():
+            task = threading.Thread(target=self.speak)
+            task.start()
         if self.ui.checkBox_2.isChecked():
             try:
                 task.join()
