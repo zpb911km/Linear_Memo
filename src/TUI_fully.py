@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 from random import randint, sample
 import os
 import sys
+import enum
+import unicodedata
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
 Ω = 0.95  # 经验权重，常数
@@ -26,6 +28,215 @@ elif sys.platform.startswith('win'):
 else:
     print('不支持的操作系统类型')
     exit()
+
+
+def file_noRpl():
+    f = open(PATH, 'r', encoding='UTF-8')
+    t = f.read()
+    ls = t.split('\n')
+    o = ''
+    for i in range(len(ls)):
+        for j in range(i+1, len(ls)):
+            try:
+                if ls[i].split('<br />')[0] == ls[j].split('<br />')[0]:
+                    ls.remove(ls[j])
+            except Exception:
+                pass
+
+    for i in ls:
+        o += i + '\n'
+
+    f = open(PATH, 'w', encoding='UTF-8')
+    f.write(o[:-1])
+
+
+def len_str(text):
+    """计算字符串的打印宽度，考虑东亚宽度字符。"""
+    return sum(2 if unicodedata.east_asian_width(char) in 'FW' else 1 for char in text)
+
+
+def center_str(text: str, length: int):
+    return ' ' * int((length - len_str(text)) / 2) + text + ' ' * (length - int((length - len_str(text)) / 2) - len_str(text))
+
+
+class CTKey(enum.Enum):
+    UP = enum.auto()
+    DOWN = enum.auto()
+    RIGHT = enum.auto()
+    LEFT = enum.auto()
+    ESC = enum.auto()
+    ENTER = enum.auto()
+    DELETE = enum.auto()
+    BACK = enum.auto()
+    TAB = enum.auto()
+
+
+def getch() -> CTKey | str: ...
+
+
+def init_term() -> None:
+    global getch
+
+    import sys
+
+    if sys.platform.startswith('win'):
+        import msvcrt
+
+        # Overwrite global function "getch"
+        def getch() -> CTKey | str:
+            key = msvcrt.getch()
+            try:
+                s = key.decode()
+                match ord(s):
+                    case 27:
+                        return CTKey.ESC
+                    case 13:
+                        return CTKey.ENTER
+                    case 9:
+                        return CTKey.TAB
+                    case 8:
+                        return CTKey.BACK
+                    case _:
+                        return s
+            except UnicodeDecodeError:
+                key = key + msvcrt.getch()
+                if key == b'\x00\x07':
+                    return CTKey.ESC
+                s = key.decode('gbk')
+                match s:
+                    case '郒':
+                        return CTKey.UP
+                    case '郟':
+                        return CTKey.DOWN
+                    case '郖':
+                        return CTKey.LEFT
+                    case '郙':
+                        return CTKey.RIGHT
+                    case '郤':
+                        return CTKey.DELETE
+                    case _:
+                        return s
+
+    elif sys.platform.startswith('linux'):
+        import functools
+        import selectors
+        import termios
+        import tty
+
+        sel: selectors.DefaultSelector = selectors.DefaultSelector()
+        sel.register(sys.stdin, selectors.EVENT_READ)
+
+        old_attr = termios.tcgetattr(sys.stdin)
+
+        def _getch_impl() -> CTKey | bytes:
+            key: bytes = sys.stdin.buffer.raw.read(1)
+            if key == b'\n':
+                return CTKey.ENTER
+            elif key == b'\t':
+                return CTKey.TAB
+            elif (key_code := ord(key)) == 127:
+                return CTKey.BACK
+            elif key_code == 27:
+                if not sel.select(0):
+                    return CTKey.ESC
+                elif (ch := sys.stdin.buffer.raw.read(1)) != b'[':
+                    return ch
+                else:
+                    if (ch2 := sys.stdin.buffer.raw.read(1)) == b'A':
+                        return CTKey.UP
+                    elif ch2 == b'B':
+                        return CTKey.DOWN
+                    elif ch2 == b'C':
+                        return CTKey.RIGHT
+                    elif ch2 == b'D':
+                        return CTKey.LEFT
+                    elif ch2 == b'3' and sys.stdin.buffer.raw.read(1) == b'~':
+                        return CTKey.DELETE
+                    else:
+                        return ch2
+            else:
+                return key
+
+        # Overwrite global function "getch"
+        @functools.wraps(_getch_impl)
+        def getch() -> CTKey | str:
+            tty.setcbreak(sys.stdin)
+            ret = _getch_impl()
+            termios.tcsetattr(sys.stdin, termios.TCSANOW, old_attr)
+            return ret.decode() if isinstance(ret, bytes) else ret
+
+    else:
+        assert False, 'Unsupported operating system'
+
+
+class TUI_Structure():
+    def __init__(self) -> None:
+        self.columns = os.get_terminal_size().columns
+        self.lines = os.get_terminal_size().lines
+        self.count = 0
+        self.Overdue = 0
+        self.Sum = 0
+        self.Front = ''
+        self.Back = ''
+        self.percent = 0.4  # 用小数表示
+
+    def show(self):
+        if self.percent > 1:
+            self.percent = 1
+        terminalText = '┏'
+        terminalText += '━' * (self.columns - 2) + '┓'
+        terminalText += '\n'
+        # line 0
+        line1 = '┃' + center_str(str(self.count), int(self.columns / 4) - 1) + \
+                center_str(str(self.Overdue), int(self.columns / 4) - 1) + \
+                center_str(str(self.Sum), int(self.columns / 4) - 1)
+        line1 += ' ' * (self.columns - len_str(line1) - 5) + '{:.2f}'.format(self.percent) + '┃'
+        if len_str(line1) > self.columns:
+            terminalText += '┃' + ' ' * (self.columns - 2) + '┃'
+        else:
+            terminalText += line1
+        terminalText += '\n'
+        # line 1
+        terminalText += '┠' + '─' * (self.columns - 4) + '┬─┨' + '\n'
+        # line 2
+        for i in range(int((self.lines - 5) / 2)):
+            line = '┃'
+            try:
+                word = self.Front.split('\n')[i]
+            except Exception:
+                word = ''
+            line += center_str(word, self.columns - 4)
+            nowLevel = ((self.lines - 4) - i) / (self.lines - 4)
+            if nowLevel <= self.percent:
+                line += '│█┃'
+            else:
+                line += '│ ┃'
+            terminalText += line + '\n'
+        # line front
+        terminalText += '┠' + '─' * (self.columns - 4) + '┤'
+        nowLevel = (self.lines - 4 - i - 1) / (self.lines - 4)
+        if nowLevel <= self.percent:
+            terminalText += '█┃'
+        else:
+            terminalText += ' ┃'
+        terminalText += '\n'
+        # line spliter
+        for i in range(self.lines - len(terminalText.split('\n')) - 1):
+            line = '┃'
+            try:
+                meaning = self.Back.split('\n')[i]
+            except Exception:
+                meaning = ''
+            line += center_str(meaning, self.columns - 4)
+            nowLevel = (self.lines - len(terminalText.split('\n')) - 1) / (self.lines - 4)
+            if nowLevel <= self.percent:
+                line += '│█┃'
+            else:
+                line += '│ ┃'
+            terminalText += line + '\n'
+        # line back
+        terminalText += '┗' + '━' * (self.columns - 4) + '┷━┛'
+        print(terminalText)
 
 
 # 计算数列
@@ -330,10 +541,22 @@ def word_inquiry(word: str):
     return outputA
 
 
+def qetch():
+    answer = getch()
+    if answer == 'q':
+        raise KeyboardInterrupt
+    else:
+        return answer
+
+
 if __name__ == '__main__':
+    init_term()
+    count = 0
     while True:
-        i = input('\nAdd or Review :')
-        if i == 'A':
+        file_noRpl()
+        print('\nAdd, Review or Quit[a/r/Q]:', end='')
+        i = getch()
+        if i == 'a':
             try:
                 while True:
                     OverdueCardList, TaciturnCardList = bulk_load(PATH)
@@ -348,13 +571,44 @@ if __name__ == '__main__':
                     bulk_save(PATH, New)
             except KeyboardInterrupt:
                 pass
-        elif i == 'R':
+        elif i == 'r':
             OverdueCardList, TaciturnCardList = bulk_load(PATH)
             try:
-                OverdueCardList, TaciturnCardList = rev_loop(OverdueCardList, TaciturnCardList)
+                for c in sample(OverdueCardList, len(OverdueCardList)):
+                    clean_screen()
+                    win = TUI_Structure()
+                    win.count = count
+                    win.Overdue = len(OverdueCardList)
+                    win.Sum = len(OverdueCardList) + len(TaciturnCardList)
+                    win.Front = c.front()
+                    win.show()
+                    while True:
+                        if qetch() == ' ':
+                            break
+                    clean_screen()
+                    win.Back = c.back()
+                    win.show()
+                    while True:
+                        key = qetch()
+                        if key == ' ':
+                            break
+                        else:
+                            lst = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'']
+                            feedback = lst.index(key) * 10
+                            if feedback > 100 or feedback < 0:
+                                continue
+                            win.percent = feedback / 100
+                            clean_screen()
+                            win.show()
+                    if c.review(feedback):
+                        TaciturnCardList.append(c)
+                        OverdueCardList.remove(c)
+                    count += 1
             except KeyboardInterrupt:
-                pass
+                clean_screen()
             finally:
                 bulk_save(PATH, OverdueCardList + TaciturnCardList)
-        elif i == 'Q':
+        elif i == 'q':
+            break
+        else:
             break

@@ -15,6 +15,12 @@ A tool may assist your memory
 - 开发未完成
 - 缺乏数据与理论支撑
 
+## 程序功能
+
+- 若要在Windows平台使用GUI界面，运行display.py （依赖于controler.py和UI/）
+- 若只在控制台运行，可以运行controler.py（没有依赖）
+- 若要在控制台模拟UI（也就是TUI），运行TUI_fully.py（没有依赖）
+
 ## reqirements
 
 - pySide6
