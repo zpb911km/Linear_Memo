@@ -21,7 +21,7 @@ if sys.platform.startswith('linux'):
     def clean_screen():
         os.system('clear')
 elif sys.platform.startswith('win'):
-    PATH = r'E:\myfiles\python\Linear_Memo\test.nmf'
+    PATH = r'E:\Nutstore\LMFiles\#current.NMF'
 
     def clean_screen():
         os.system('cls')
@@ -183,6 +183,8 @@ class TUI_Structure():
     def show(self):
         if self.percent > 1:
             self.percent = 1
+        elif self.percent < 0:
+            self.percent = 0
         terminalText = '┏'
         terminalText += '━' * (self.columns - 2) + '┓'
         terminalText += '\n'
@@ -588,18 +590,23 @@ if __name__ == '__main__':
                     clean_screen()
                     win.Back = c.back()
                     win.show()
+                    lst = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'']
                     while True:
                         key = qetch()
                         if key == ' ':
                             break
-                        else:
-                            lst = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'']
+                        elif key in lst:
                             feedback = lst.index(key) * 10
                             if feedback > 100 or feedback < 0:
                                 continue
-                            win.percent = feedback / 100
-                            clean_screen()
-                            win.show()
+                        else:
+                            if key == CTKey.UP:
+                                feedback += 1
+                            elif key == CTKey.DOWN:
+                                feedback -= 1
+                        win.percent = feedback / 100
+                        clean_screen()
+                        win.show()
                     if c.review(feedback):
                         TaciturnCardList.append(c)
                         OverdueCardList.remove(c)
