@@ -8,6 +8,8 @@ import os
 import sys
 import enum
 import unicodedata
+import pyttsx3
+from threading import Thread
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
 Ω = 0.95  # 经验权重，常数
@@ -15,6 +17,12 @@ Rchecktime = 0  # R==1时，抽查底数（越大越不易出现，等于0关闭
 MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调）
 NewCardAddConst = 0  # 每次计算推荐多少全新的卡片
+# 初始化发音引擎
+engine = pyttsx3.init()
+engine.setProperty('rate', 120)
+engine.setProperty('volume', 1.0)
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[1].id)
 if sys.platform.startswith('linux'):
     PATH = r'./#current.NMF'
 
@@ -549,6 +557,11 @@ def qetch():
         raise KeyboardInterrupt
     else:
         return answer
+    
+
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
 
 
 if __name__ == '__main__':
@@ -599,6 +612,9 @@ if __name__ == '__main__':
                             feedback = lst.index(key) * 10
                             if feedback > 100 or feedback < 0:
                                 continue
+                        elif key == 't':
+                            task = Thread(target=speak, args=[win.Front.split('\n')[0]])
+                            task.run()
                         else:
                             if key == CTKey.UP:
                                 feedback += 1
