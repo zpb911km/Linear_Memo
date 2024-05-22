@@ -437,6 +437,10 @@ class card():
             self.basedata[5] = Δ
             self.basedata[6] = R
             return (S, Δ)
+        
+
+def custom_sort_key(card: card):
+    return (card.basedata[4], -card.basedata[5])
 
 
 def bulk_load(path) -> tuple[list[card], list[card]]:
@@ -455,6 +459,7 @@ def bulk_load(path) -> tuple[list[card], list[card]]:
             Ov.append(c)
         else:
             Ta.append(c)
+    Ov.sort(key=custom_sort_key)
     return (Ov, Ta)
 
 
@@ -567,8 +572,8 @@ def speak(text):
 if __name__ == '__main__':
     init_term()
     count = 0
+    file_noRpl()
     while True:
-        file_noRpl()
         print('\nAdd, Review or Quit[a/r/Q]:', end='')
         i = getch()
         if i == 'a':
@@ -589,20 +594,24 @@ if __name__ == '__main__':
         elif i == 'r':
             OverdueCardList, TaciturnCardList = bulk_load(PATH)
             try:
-                for c in sample(OverdueCardList, len(OverdueCardList)):
+                while len(OverdueCardList) > 0:
+                    c = OverdueCardList[randint(0, 3)]  # 前三个里边抽取
                     clean_screen()
                     win = TUI_Structure()
+                    win.lines -= 1
                     win.count = count
                     win.Overdue = len(OverdueCardList)
                     win.Sum = len(OverdueCardList) + len(TaciturnCardList)
                     win.Front = c.front()
                     win.show()
+                    print('S=' + str(c.S()) + 'Δ=' + str(c.Δ()))
                     while True:
                         if qetch() == ' ':
                             break
                     clean_screen()
                     win.Back = c.back()
                     win.show()
+                    print('S=' + str(c.S()) + 'Δ=' + str(c.Δ()))
                     lst = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'']
                     while True:
                         key = qetch()
@@ -623,9 +632,10 @@ if __name__ == '__main__':
                         win.percent = feedback / 100
                         clean_screen()
                         win.show()
-                    if c.review(feedback):
-                        TaciturnCardList.append(c)
-                        OverdueCardList.remove(c)
+                        print('S=' + str(c.S()) + 'Δ=' + str(c.Δ()))
+                    c.review(feedback)
+                    bulk_save(PATH, OverdueCardList + TaciturnCardList)
+                    OverdueCardList, TaciturnCardList = bulk_load(PATH)
                     count += 1
             except KeyboardInterrupt:
                 clean_screen()
