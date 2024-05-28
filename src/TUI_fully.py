@@ -8,7 +8,6 @@ import os
 import sys
 import enum
 import unicodedata
-import pyttsx3
 from threading import Thread
 DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
 spliter = '\t'  # 存储文件的分隔符
@@ -17,29 +16,39 @@ Rchecktime = 0  # R==1时，抽查底数（越大越不易出现，等于0关闭
 MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调）
 NewCardAddConst = 0  # 每次计算推荐多少全新的卡片
-# 初始化发音引擎
-engine = pyttsx3.init()
-engine.setProperty('rate', 120)
-engine.setProperty('volume', 1.0)
-voices = engine.getProperty('voices')
-engine.setProperty('voice', voices[1].id)
+
 if sys.platform.startswith('linux'):
-    PATH = r'./#current.NMF'
+    PATH = r'./'
 
     def clean_screen():
         os.system('clear')
+
+    def speak(text):
+        # TODO android tts
+        pass
 elif sys.platform.startswith('win'):
-    PATH = r'E:\Nutstore\LMFiles\#current.NMF'
+    import pyttsx3
+    # 初始化发音引擎
+    engine = pyttsx3.init()
+    engine.setProperty('rate', 120)
+    engine.setProperty('volume', 1.0)
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[1].id)
+    PATH = r'E:\Nutstore\LMFiles'
 
     def clean_screen():
         os.system('cls')
+
+    def speak(text):
+        engine.say(text)
+        engine.runAndWait()
 else:
     print('不支持的操作系统类型')
     exit()
 
 
-def file_noRpl():
-    f = open(PATH, 'r', encoding='UTF-8')
+def file_noRpl(filePath):
+    f = open(filePath, 'r', encoding='UTF-8')
     t = f.read()
     ls = t.split('\n')
     o = ''
@@ -54,7 +63,7 @@ def file_noRpl():
     for i in ls:
         o += i + '\n'
 
-    f = open(PATH, 'w', encoding='UTF-8')
+    f = open(filePath, 'w', encoding='UTF-8')
     f.write(o[:-1])
 
 
@@ -397,7 +406,7 @@ class card():
             x = [i/len(y) for i in range(1, len(y) + 1)]
             _, _, _, Ss = OLS(x, y)
             bias = (Ss - 0.5) * 0.1
-            os.system('mshta vbscript:msgbox("!!!!!卡片旧了!!!!!",16,"卡片烂了")(window.close)')
+            # os.system('mshta vbscript:msgbox("!!!!!卡片旧了!!!!!",16,"卡片烂了")(window.close)')
         # 线性回归求bias
         # 核心三句
         S = Ω * feedback + (1 - Ω) * self.basedata[4] * 100
@@ -562,24 +571,39 @@ def qetch():
         raise KeyboardInterrupt
     else:
         return answer
-    
-
-def speak(text):
-    engine.say(text)
-    engine.runAndWait()
 
 
 if __name__ == '__main__':
     init_term()
     count = 0
-    file_noRpl()
+    files = []
+    for A, B, C in os.walk(PATH):
+        for i in C:
+            f = os.path.join(A, i)
+            if f.endswith('.NMF'):
+                files.append(f)
+    for n, i in enumerate(files):
+        print(n, ':', i)
+    filePath = files[int(input(':'))]
+    file_noRpl(filePath)
     while True:
         print('\nAdd, Review or Quit[a/r/Q]:', end='')
         i = getch()
+        if i == 'A':
+            try:
+                while True:
+                    OverdueCardList, TaciturnCardList = bulk_load(filePath)
+                    CardList = OverdueCardList + TaciturnCardList
+                    F = input('\n-->')
+                    B = input('\n==>')
+                    New = CardList + [card(F, B)]
+                    bulk_save(filePath, New)
+            except KeyboardInterrupt:
+                pass
         if i == 'a':
             try:
                 while True:
-                    OverdueCardList, TaciturnCardList = bulk_load(PATH)
+                    OverdueCardList, TaciturnCardList = bulk_load(filePath)
                     CardList = OverdueCardList + TaciturnCardList
                     word = input('-->')
                     t = word_inquiry(word)
@@ -588,11 +612,11 @@ if __name__ == '__main__':
                     print(F)
                     print(B)
                     New = CardList + [card(F, B)]
-                    bulk_save(PATH, New)
+                    bulk_save(filePath, New)
             except KeyboardInterrupt:
                 pass
         elif i == 'r':
-            OverdueCardList, TaciturnCardList = bulk_load(PATH)
+            OverdueCardList, TaciturnCardList = bulk_load(filePath)
             try:
                 while len(OverdueCardList) > 0:
                     c = OverdueCardList[randint(0, 3)]  # 前三个里边抽取
@@ -634,13 +658,13 @@ if __name__ == '__main__':
                         win.show()
                         print('S=' + str(c.S()) + 'Δ=' + str(c.Δ()))
                     c.review(feedback)
-                    bulk_save(PATH, OverdueCardList + TaciturnCardList)
-                    OverdueCardList, TaciturnCardList = bulk_load(PATH)
+                    bulk_save(filePath, OverdueCardList + TaciturnCardList)
+                    OverdueCardList, TaciturnCardList = bulk_load(filePath)
                     count += 1
             except KeyboardInterrupt:
                 clean_screen()
             finally:
-                bulk_save(PATH, OverdueCardList + TaciturnCardList)
+                bulk_save(filePath, OverdueCardList + TaciturnCardList)
         elif i == 'q':
             break
         else:
