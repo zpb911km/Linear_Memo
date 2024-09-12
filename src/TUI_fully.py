@@ -9,71 +9,78 @@ import sys
 import enum
 import unicodedata
 from threading import Thread
-DTFormat = r'%Y/%m/%d %H:%M'  # 存储时间的文本的格式，excel同款
-spliter = '\t'  # 存储文件的分隔符
+import pyttsx3
+
+# 初始化发音引擎
+engine = pyttsx3.init()
+engine.setProperty("rate", 120)
+engine.setProperty("volume", 1.0)
+voices = engine.getProperty("voices")
+engine.setProperty("voice", "english")
+
+DTFormat = r"%Y/%m/%d %H:%M"  # 存储时间的文本的格式，excel同款
+spliter = "\t"  # 存储文件的分隔符
 Ω = 0.95  # 经验权重，常数
-Rchecktime = 0  # R==1时，抽查底数（越大越不易出现，等于0关闭抽查复习） 默认150
+Rchecktime = 0  # R==1时，抽查底数（越大越不易出现，等于0关闭抽查复习）
 MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调）
-NewCardAddConst = 0  # 每次计算推荐多少全新的卡片
+NewCardAddConst = 10  # 每次计算推荐多少全新的卡片
 
-if sys.platform.startswith('linux'):
-    PATH = r'./'
-
-    def clean_screen():
-        os.system('clear')
-
-    def speak(text):
-        # TODO android tts
-        pass
-elif sys.platform.startswith('win'):
-    import pyttsx3
-    # 初始化发音引擎
-    engine = pyttsx3.init()
-    engine.setProperty('rate', 120)
-    engine.setProperty('volume', 1.0)
-    voices = engine.getProperty('voices')
-    engine.setProperty('voice', voices[1].id)
-    PATH = r'E:\Nutstore\LMFiles'
+if sys.platform.startswith("linux"):
+    PATH = r"./"
 
     def clean_screen():
-        os.system('cls')
+        os.system("clear")
 
-    def speak(text):
-        engine.say(text)
-        engine.runAndWait()
+elif sys.platform.startswith("win"):
+    PATH = r"E:\ServerSyncFiles"
+
+    def clean_screen():
+        os.system("cls")
+
 else:
-    print('不支持的操作系统类型')
+    print("不支持的操作系统类型")
+    input()
     exit()
 
 
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+
 def file_noRpl(filePath):
-    f = open(filePath, 'r', encoding='UTF-8')
+    f = open(filePath, "r", encoding="UTF-8")
     t = f.read()
-    ls = t.split('\n')
-    o = ''
+    ls = t.split("\n")
+    o = ""
     for i in range(len(ls)):
-        for j in range(i+1, len(ls)):
+        for j in range(i + 1, len(ls)):
             try:
-                if ls[i].split('<br />')[0] == ls[j].split('<br />')[0]:
+                if ls[i].split("<br />")[0] == ls[j].split("<br />")[0]:
                     ls.remove(ls[j])
             except Exception:
                 pass
 
     for i in ls:
-        o += i + '\n'
+        o += i + "\n"
 
-    f = open(filePath, 'w', encoding='UTF-8')
+    f = open(filePath, "w", encoding="UTF-8")
     f.write(o[:-1])
 
 
 def len_str(text):
-    """计算字符串的打印宽度，考虑东亚宽度字符。"""
-    return sum(2 if unicodedata.east_asian_width(char) in 'FW' else 1 for char in text)
+    out = sum(2 if unicodedata.east_asian_width(char) in "FW" else 1 for char in text)
+    return out
 
 
 def center_str(text: str, length: int):
-    return ' ' * int((length - len_str(text)) / 2) + text + ' ' * (length - int((length - len_str(text)) / 2) - len_str(text))
+    out = (
+        " " * int((length - len_str(text)) / 2)
+        + text
+        + " " * (length - int((length - len_str(text)) / 2) - len_str(text))
+    )
+    return out
 
 
 class CTKey(enum.Enum):
@@ -96,7 +103,7 @@ def init_term() -> None:
 
     import sys
 
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         import msvcrt
 
         # Overwrite global function "getch"
@@ -117,24 +124,24 @@ def init_term() -> None:
                         return s
             except UnicodeDecodeError:
                 key = key + msvcrt.getch()
-                if key == b'\x00\x07':
+                if key == b"\x00\x07":
                     return CTKey.ESC
-                s = key.decode('gbk')
+                s = key.decode("gbk")
                 match s:
-                    case '郒':
+                    case "郒":
                         return CTKey.UP
-                    case '郟':
+                    case "郟":
                         return CTKey.DOWN
-                    case '郖':
+                    case "郖":
                         return CTKey.LEFT
-                    case '郙':
+                    case "郙":
                         return CTKey.RIGHT
-                    case '郤':
+                    case "郤":
                         return CTKey.DELETE
                     case _:
                         return s
 
-    elif sys.platform.startswith('linux'):
+    elif sys.platform.startswith("linux"):
         import functools
         import selectors
         import termios
@@ -147,27 +154,27 @@ def init_term() -> None:
 
         def _getch_impl() -> CTKey | bytes:
             key: bytes = sys.stdin.buffer.raw.read(1)
-            if key == b'\n':
+            if key == b"\n":
                 return CTKey.ENTER
-            elif key == b'\t':
+            elif key == b"\t":
                 return CTKey.TAB
             elif (key_code := ord(key)) == 127:
                 return CTKey.BACK
             elif key_code == 27:
                 if not sel.select(0):
                     return CTKey.ESC
-                elif (ch := sys.stdin.buffer.raw.read(1)) != b'[':
+                elif (ch := sys.stdin.buffer.raw.read(1)) != b"[":
                     return ch
                 else:
-                    if (ch2 := sys.stdin.buffer.raw.read(1)) == b'A':
+                    if (ch2 := sys.stdin.buffer.raw.read(1)) == b"A":
                         return CTKey.UP
-                    elif ch2 == b'B':
+                    elif ch2 == b"B":
                         return CTKey.DOWN
-                    elif ch2 == b'C':
+                    elif ch2 == b"C":
                         return CTKey.RIGHT
-                    elif ch2 == b'D':
+                    elif ch2 == b"D":
                         return CTKey.LEFT
-                    elif ch2 == b'3' and sys.stdin.buffer.raw.read(1) == b'~':
+                    elif ch2 == b"3" and sys.stdin.buffer.raw.read(1) == b"~":
                         return CTKey.DELETE
                     else:
                         return ch2
@@ -183,18 +190,18 @@ def init_term() -> None:
             return ret.decode() if isinstance(ret, bytes) else ret
 
     else:
-        assert False, 'Unsupported operating system'
+        assert False, "Unsupported operating system"
 
 
-class TUI_Structure():
+class TUI_Structure:
     def __init__(self) -> None:
         self.columns = os.get_terminal_size().columns
         self.lines = os.get_terminal_size().lines
         self.count = 0
         self.Overdue = 0
         self.Sum = 0
-        self.Front = ''
-        self.Back = ''
+        self.Front = ""
+        self.Back = ""
         self.percent = 0.4  # 用小数表示
 
     def show(self):
@@ -202,59 +209,81 @@ class TUI_Structure():
             self.percent = 1
         elif self.percent < 0:
             self.percent = 0
-        terminalText = '┏'
-        terminalText += '━' * (self.columns - 2) + '┓'
-        terminalText += '\n'
+        terminalText = "┏"
+        terminalText += "━" * (self.columns - 2) + "┓"
+        terminalText += "\n"
         # line 0
-        line1 = '┃' + center_str(str(self.count), int(self.columns / 4) - 1) + \
-                center_str(str(self.Overdue), int(self.columns / 4) - 1) + \
-                center_str(str(self.Sum), int(self.columns / 4) - 1)
-        line1 += ' ' * (self.columns - len_str(line1) - 5) + '{:.2f}'.format(self.percent) + '┃'
-        if len_str(line1) > self.columns:
-            terminalText += '┃' + ' ' * (self.columns - 2) + '┃'
+        line = (
+            "┃"
+            + center_str(str(self.count), int(self.columns / 4) - 1)
+            + center_str(str(self.Overdue), int(self.columns / 4) - 1)
+            + center_str(str(self.Sum), int(self.columns / 4) - 1)
+        )
+        line += (
+            " " * (self.columns - len_str(line) - 5)
+            + "{:.2f}".format(self.percent)
+            + "┃"
+        )
+        if len_str(line) > self.columns:
+            terminalText += "┃" + " " * (self.columns - 2) + "┃"
         else:
-            terminalText += line1
-        terminalText += '\n'
+            terminalText += line
+        terminalText += "\n"
         # line 1
-        terminalText += '┠' + '─' * (self.columns - 4) + '┬─┨' + '\n'
+        terminalText += "┠" + "─" * (self.columns - 4) + "┬─┨" + "\n"
         # line 2
         for i in range(int((self.lines - 5) / 2)):
-            line = '┃'
+            line = "┃"
             try:
-                word = self.Front.split('\n')[i]
+                word = self.Front.split("\n")[i]
             except Exception:
-                word = ''
+                word = ""
             line += center_str(word, self.columns - 4)
             nowLevel = ((self.lines - 4) - i) / (self.lines - 4)
             if nowLevel <= self.percent:
-                line += '│█┃'
+                line += "│█┃"
             else:
-                line += '│ ┃'
-            terminalText += line + '\n'
+                line += "│ ┃"
+            terminalText += line + "\n"
         # line front
-        terminalText += '┠' + '─' * (self.columns - 4) + '┤'
+        terminalText += "┠" + "─" * (self.columns - 4) + "┤"
         nowLevel = (self.lines - 4 - i - 1) / (self.lines - 4)
         if nowLevel <= self.percent:
-            terminalText += '█┃'
+            terminalText += "█┃"
         else:
-            terminalText += ' ┃'
-        terminalText += '\n'
+            terminalText += " ┃"
+        terminalText += "\n"
         # line spliter
-        for i in range(self.lines - len(terminalText.split('\n')) - 1):
-            line = '┃'
+        tempB = ""
+        for t in self.Back.split("\n"):
+            i = 0
+            j = 0
+            while len_str(t) > self.columns - 5:  # 折行
+                while len_str(t[:j]) < self.columns - 5:
+                    j += 1
+                tempB += t[:j] + "\n"
+                t = t[j:]
+            tempB += t + "\n"
+        self.Back = tempB.replace("\n\n", "\n")
+        if self.Back.endswith("\n"):
+            self.Back = self.Back[:-1]
+        for i in range(self.lines - len(terminalText.split("\n")) - 1):
+            line = "┃"
             try:
-                meaning = self.Back.split('\n')[i]
+                meaning = self.Back.split("\n")[i]
             except Exception:
-                meaning = ''
+                meaning = ""
             line += center_str(meaning, self.columns - 4)
-            nowLevel = (self.lines - len(terminalText.split('\n')) - 1) / (self.lines - 4)
+            nowLevel = (self.lines - len(terminalText.split("\n")) - 1) / (
+                self.lines - 4
+            )
             if nowLevel <= self.percent:
-                line += '│█┃'
+                line += "│█┃"
             else:
-                line += '│ ┃'
-            terminalText += line + '\n'
+                line += "│ ┃"
+            terminalText += line + "\n"
         # line back
-        terminalText += '┗' + '━' * (self.columns - 4) + '┷━┛'
+        terminalText += "┗" + "━" * (self.columns - 4) + "┷━┛"
         print(terminalText)
 
 
@@ -263,48 +292,54 @@ def listcalc(l1, calc, l2) -> list:
     out = []
     if isinstance(l2, list):
         match calc:
-            case '+':
+            case "+":
                 for num in range(len(l1)):
                     out.append(l1[num] + l2[num])
-            case '-':
+            case "-":
                 for num in range(len(l1)):
                     out.append(l1[num] - l2[num])
-            case '*':
+            case "*":
                 for num in range(len(l1)):
                     out.append(l1[num] * l2[num])
-            case '/':
+            case "/":
                 for num in range(len(l1)):
                     out.append(l1[num] / l2[num])
     else:
         match calc:
-            case '+':
+            case "+":
                 for num in range(len(l1)):
                     out.append(l1[num] + l2)
-            case '-':
+            case "-":
                 for num in range(len(l1)):
                     out.append(l1[num] - l2)
-            case '*':
+            case "*":
                 for num in range(len(l1)):
                     out.append(l1[num] * l2)
-            case '/':
+            case "/":
                 for num in range(len(l1)):
                     out.append(l1[num] / l2)
-            case '**':
+            case "**":
                 for num in range(len(l1)):
                     out.append(l1[num] ** l2)
     return out
 
 
 def OLS(x, y) -> float:
-    k = (sum(listcalc(x, '*', y)) - sum(x) * sum(y) / len(x)) / (sum(listcalc(x, '*', x)) - (sum(x)**2)/len(x))
+    k = (sum(listcalc(x, "*", y)) - sum(x) * sum(y) / len(x)) / (
+        sum(listcalc(x, "*", x)) - (sum(x) ** 2) / len(x)
+    )
     b = sum(y) / len(y) - k * sum(x) / len(x)
-    Rs = 1 - sum(listcalc(listcalc(y, '-', listcalc(listcalc(x, '*', k), '+', b)), '**', 2)) / sum(listcalc(listcalc(y, '-', (sum(y) / len(y))), '**', 2))
-    Ss = sum(listcalc(listcalc(y, '-', listcalc(listcalc(x, '*', k), '+', b)), '**', 2)) / sum(listcalc(listcalc(y, '-', (sum(y) / len(y))), '**', 2))
+    Rs = 1 - sum(
+        listcalc(listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2)
+    ) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
+    Ss = sum(
+        listcalc(listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2)
+    ) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
     return k, b, Rs, Ss
 
 
-class card():
-    '''
+class card:
+    """
     方法:
         创建
         从文本读出
@@ -312,16 +347,26 @@ class card():
         复习操作
         更改操作
         判过期
-    '''
+    """
+
     # 给card对象多一些抽象，方便表达
-    def __init__(self, F: str = '', B: str = '', T: str = datetime.now().strftime(DTFormat), H: str = '{:.2f}'.format(ForgetLine), S: float = 0.4, Δ: float = 1, R: int = 0) -> None:
-        self.basedata = [F.lower(), B, T, H, S, Δ, R]
+    def __init__(
+        self,
+        F: str = "",
+        B: str = "",
+        T: str = datetime.now().strftime(DTFormat),
+        H: str = "{:.2f}".format(ForgetLine),
+        S: float = 0.4,
+        Δ: float = 1,
+        R: int = 0,
+    ) -> None:
+        self.basedata = [F, B, T, H, S, Δ, R]
         # 对位：         0，        1，2，3，4，5，6
         # 我也不想做如此愚蠢的操作啊
 
     def out_text(self) -> str:
         # 文本输出card，方便存储
-        text = ''
+        text = ""
         for i in self.basedata:
             text += str(i) + spliter
         return text[:-1]
@@ -347,7 +392,7 @@ class card():
             else:
                 return False
         elif self.basedata[6] == 2:
-            if randint(0, Rchecktime/2) == 1:
+            if randint(0, int(Rchecktime / 2)) == 1:
                 return True
             else:
                 return False
@@ -357,7 +402,7 @@ class card():
             # 不超时就没过期，不用复习
             return False
         # 新卡片计数加入
-        if len(self.basedata[3].split(',')) == 1 and self.basedata[4] == 0.4:
+        if len(self.basedata[3].split(",")) == 1 and self.basedata[4] == 0.4:
             global NewCardAdd
             if NewCardAdd > 0:
                 NewCardAdd -= 1
@@ -368,16 +413,24 @@ class card():
         return True
 
     def front(self) -> str:
-        return self.basedata[0].replace('<br />', '\n')
+        return self.basedata[0].replace("<br />", "\n")
 
     def setFront(self, text) -> None:
-        self.basedata[0] = text.replace('\n', '<br />')
+        self.basedata[0] = text.replace("\n", "<br />")
 
     def back(self) -> str:
-        return self.basedata[1].replace('<br />', '\n')
+        text = self.basedata[1]
+        meanings = text.split("<split>")[0].replace("<br />", "\n")
+        try:
+            examples = text.split("<split>")[1].split("<br />")
+            example = examples[randint(0, len(examples) - 1)]
+            text = meanings + "\n" + example
+        except IndexError:
+            text = meanings
+        return text
 
     def setBack(self, text) -> None:
-        self.basedata[1] = text.replace('\n', '<br />')
+        self.basedata[1] = text.replace("\n", "<br />")
 
     def S(self) -> float:
         return self.basedata[4]
@@ -388,22 +441,24 @@ class card():
     def R(self) -> int:
         return self.basedata[6]
 
-    def review(self, feedback: float) -> tuple[float, float]:  # 返回值表示是否解除过期状态
-        '''feedback∈[0,100]'''
+    def review(
+        self, feedback: float
+    ) -> tuple[float, float]:  # 返回值表示是否解除过期状态
+        """feedback∈[0,100]"""
         if abs(feedback - 100) <= 0.00000000000001:
             self.basedata[6] = 2
             return (100, self.basedata[5])
         if abs(feedback - 0) <= 0.00000000000001:
             self.basedata[2] = datetime.now().strftime(DTFormat)
             self.basedata[5] = 1
-            return (self.basedata[4]*100, self.basedata[5])
-        self.basedata[3] += ',{:.2f}'.format(feedback / 100)
+            return (self.basedata[4] * 100, self.basedata[5])
+        self.basedata[3] += ",{:.2f}".format(feedback / 100)
         # 线性回归求bias
-        y = [float(i) for i in self.basedata[3].split(',')]
+        y = [float(i) for i in self.basedata[3].split(",")]
         if len(y) <= 20:  # 新卡片保护
             bias = 0
         else:
-            x = [i/len(y) for i in range(1, len(y) + 1)]
+            x = [i / len(y) for i in range(1, len(y) + 1)]
             _, _, _, Ss = OLS(x, y)
             bias = (Ss - 0.5) * 0.1
             # os.system('mshta vbscript:msgbox("!!!!!卡片旧了!!!!!",16,"卡片烂了")(window.close)')
@@ -421,7 +476,7 @@ class card():
             R = 0
             S = 40
             Δ = 1
-            self.basedata[4] = S/100
+            self.basedata[4] = S / 100
             self.basedata[5] = Δ
             self.basedata[2] = T
             self.basedata[6] = R
@@ -429,24 +484,24 @@ class card():
             R = 0
             S = 40
             Δ = 1
-            self.basedata[4] = S/100
+            self.basedata[4] = S / 100
             self.basedata[5] = Δ
             self.basedata[2] = T
             self.basedata[6] = R
         if Δ <= 0:
             Δ = -Δ + 0.01
         if Δ > 1:
-            self.basedata[4] = S/100
+            self.basedata[4] = S / 100
             self.basedata[5] = Δ
             self.basedata[2] = T
             self.basedata[6] = R
             return (S, Δ)
         else:
-            self.basedata[4] = S/100
+            self.basedata[4] = S / 100
             self.basedata[5] = Δ
             self.basedata[6] = R
             return (S, Δ)
-        
+
 
 def custom_sort_key(card: card):
     return (card.basedata[4], -card.basedata[5])
@@ -456,9 +511,9 @@ def bulk_load(path) -> tuple[list[card], list[card]]:
     # 批量导入数据
     global NewCardAdd
     NewCardAdd = NewCardAddConst
-    with open(path, 'r', encoding='UTF-8') as file:
+    with open(path, "r", encoding="UTF-8") as file:
         txt = file.read()
-        lines = txt.split('\n')
+        lines = txt.split("\n")
     Ov = []
     Ta = []
     for line in lines:
@@ -474,10 +529,10 @@ def bulk_load(path) -> tuple[list[card], list[card]]:
 
 def bulk_save(path, clist: list[card]):
     # 批量导出数据
-    text = ''
+    text = ""
     for c in clist:
-        text += c.out_text() + '\n'
-    with open(path, 'w', encoding='UTF-8') as file:
+        text += c.out_text() + "\n"
+    with open(path, "w", encoding="UTF-8") as file:
         file.write(text[:-1])
 
 
@@ -490,9 +545,9 @@ def rev_loop(Ov: list[card], Ta: list[card]):
         input()
         clean_screen()
         print(len(Ov), len(Ov) + len(Ta))
-        print(c.front() + '\n\n' + c.back())
+        print(c.front() + "\n\n" + c.back())
         while True:
-            feedback = float(input(':')) * 10
+            feedback = float(input(":")) * 10
             if feedback > 100 or feedback < 0:
                 continue
             else:
@@ -505,23 +560,23 @@ def rev_loop(Ov: list[card], Ta: list[card]):
 
 def Replace(text):
     rpl = [
-        ['，', ','],
-        ['。', '.'],
-        ['：', ':'],
-        ['；', ';'],
-        ['（', '('],
-        ['）', ')'],
-        ['……', '...'],
-        ['、', ','],
-        ['！', '!'],
-        ['？', '?'],
-        ['“', '"'],
-        ['”', '"'],
-        ['【', '['],
-        ['】', ']'],
-        ['`', '·'],
-        ['<=', '≤'],
-        ['>=', '≥']
+        ["，", ","],
+        ["。", "."],
+        ["：", ":"],
+        ["；", ";"],
+        ["（", "("],
+        ["）", ")"],
+        ["……", "..."],
+        ["、", ","],
+        ["！", "!"],
+        ["？", "?"],
+        ["“", '"'],
+        ["”", '"'],
+        ["【", "["],
+        ["】", "]"],
+        ["`", "·"],
+        ["<=", "≤"],
+        [">=", "≥"],
     ]
     for pair in rpl:
         text = text.replace(pair[0], pair[1])
@@ -530,123 +585,147 @@ def Replace(text):
 
 def word_inquiry(word: str):
     # bing 查单词
-    url = f'https://cn.bing.com/dict/search?q={word}'
+    url = f"https://cn.bing.com/dict/search?q={word}"
 
     web = get(url)
-    t = BeautifulSoup(web.content, 'html.parser')
-    ans = t.head.find_all("meta")[3].attrs['content'].split('，')
+    t = BeautifulSoup(web.content, "html.parser")
+    ans = t.head.find_all("meta")[3].attrs["content"].split("，")
 
-    word = ans[0].split('必应词典为您提供')[-1]
-    word = word.split('的释义')[0]
+    word = ans[0].split("必应词典为您提供")[-1]
+    word = word.split("的释义")[0]
 
-    outputA = str('')
-    outputA += word + '\t'
+    outputA = str("")
+    outputA += word + "\t"
 
     try:
-        meaning = t.body.find('div', 'contentPadding')\
-                    .find('div', 'content', 'b_cards')\
-                    .find('div', 'rs_area', 'b_cards')\
-                    .find('div', 'lf_area')\
-                    .find('div', 'qdef')\
-                    .find('ul')\
-                    .find_all('li')
+        meaning = (
+            t.body.find("div", "contentPadding")
+            .find("div", "content", "b_cards")
+            .find("div", "rs_area", "b_cards")
+            .find("div", "lf_area")
+            .find("div", "qdef")
+            .find("ul")
+            .find_all("li")
+        )
     except AttributeError:
-        raise Exception('No such word!!')
+        raise Exception("No such word!!")
 
     for line in meaning:
-        prop = line.find('span', 'pos').string.strip()
-        mean = line.find('span', 'def', 'b_regtxt').find('span').string.strip()
-        if '网' in prop:
-            prop = '网:'
+        prop = line.find("span", "pos").string.strip()
+        mean = line.find("span", "def", "b_regtxt").find("span").string.strip()
+        if "网" in prop:
+            prop = "网:"
         if line == meaning[-1]:
             outputA += Replace(prop) + Replace(mean)
         else:
-            outputA += Replace(prop) + Replace(mean) + '<br />'
-    return outputA
+            outputA += Replace(prop) + Replace(mean) + "<br />"
+    example_sentences = (
+        t.body.find("div", "contentPadding")
+        .find("div", "content", "b_cards")
+        .find("div", "rs_area", "b_cards")
+        .find("div", "lf_area")
+        .find("div", "se_div")
+        .find_all("div", "se_li")
+    )
+    sentences = []
+    for sentence in example_sentences:
+        sentence = (
+            sentence.find("div", "se_li1")
+            .find("div", "sen_en", "b_regtxt")
+            .find_all("a")
+        )
+        en_sentence = ""
+        for gword in sentence:
+            en_sentence += gword.text + " "
+        sentences.append(en_sentence)
+    outputA += "<split>"
+    for s in sentences:
+        outputA += Replace(s) + "<br />"
+    return outputA[:-6]
 
 
 def qetch():
     answer = getch()
-    if answer == 'q':
+    if answer == "q":
         raise KeyboardInterrupt
     else:
         return answer
 
 
-if __name__ == '__main__':
+def cardDBG(c: card):
+    if 0:
+        print("S=" + str(c.S()) + "\tΔ=" + str(c.Δ()))
+
+
+if __name__ == "__main__":
     init_term()
     count = 0
     files = []
     for A, B, C in os.walk(PATH):
         for i in C:
             f = os.path.join(A, i)
-            if f.endswith('.NMF'):
+            if f.endswith(".NMF"):
                 files.append(f)
     for n, i in enumerate(files):
-        print(n, ':', i)
-    filePath = files[int(input(':'))]
+        print(n, ":", i)
+    filePath = files[int(input(":"))]
+    # filePath = files[0]
     file_noRpl(filePath)
     while True:
-        print('\nAdd, Review or Quit[a/r/Q]:', end='')
+        print("\nAdd, Review or Quit[a/A/r/Q]:", end="")
         i = getch()
-        if i == 'A':
+        if i == "A":
             try:
                 while True:
                     OverdueCardList, TaciturnCardList = bulk_load(filePath)
                     CardList = OverdueCardList + TaciturnCardList
-                    F = input('\n-->')
-                    B = input('\n==>')
+                    F = input("\n-->")
+                    B = input("\n==>")
                     New = CardList + [card(F, B)]
                     bulk_save(filePath, New)
             except KeyboardInterrupt:
-                pass
-        if i == 'a':
+                continue
+        if i == "a":
             try:
                 while True:
                     OverdueCardList, TaciturnCardList = bulk_load(filePath)
                     CardList = OverdueCardList + TaciturnCardList
-                    word = input('-->')
+                    word = input("-->")
                     t = word_inquiry(word)
-                    F = t.split('\t')[0]
-                    B = t.split('\t')[1]
+                    F = t.split("\t")[0]
+                    B = t.split("\t")[1]
                     print(F)
                     print(B)
                     New = CardList + [card(F, B)]
                     bulk_save(filePath, New)
             except KeyboardInterrupt:
                 pass
-        elif i == 'r':
+        elif i == "r":
             OverdueCardList, TaciturnCardList = bulk_load(filePath)
             try:
                 while len(OverdueCardList) > 0:
-                    c = OverdueCardList[randint(0, 3)]  # 前三个里边抽取
+                    c = OverdueCardList[randint(0, min(len(OverdueCardList) - 1, 3))]  # 前三个里边抽取
                     clean_screen()
                     win = TUI_Structure()
-                    win.lines -= 1
+                    # win.lines -= 1
                     win.count = count
                     win.Overdue = len(OverdueCardList)
                     win.Sum = len(OverdueCardList) + len(TaciturnCardList)
                     win.Front = c.front()
                     win.show()
-                    print('S=' + str(c.S()) + 'Δ=' + str(c.Δ()))
-                    while True:
-                        if qetch() == ' ':
-                            break
-                    clean_screen()
-                    win.Back = c.back()
-                    win.show()
-                    print('S=' + str(c.S()) + 'Δ=' + str(c.Δ()))
-                    lst = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'']
+                    cardDBG(c)
+                    lst = ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'"]
+                    feedback = 40
                     while True:
                         key = qetch()
-                        if key == ' ':
+                        if key == " ":
                             break
                         elif key in lst:
                             feedback = lst.index(key) * 10
                             if feedback > 100 or feedback < 0:
                                 continue
-                        elif key == 't':
-                            task = Thread(target=speak, args=[win.Front.split('\n')[0]])
+                        elif key == "t":
+                            task = Thread(target=speak, args=[win.Front.split("\n")[0]])
                             task.run()
                         else:
                             if key == CTKey.UP:
@@ -656,7 +735,31 @@ if __name__ == '__main__':
                         win.percent = feedback / 100
                         clean_screen()
                         win.show()
-                        print('S=' + str(c.S()) + 'Δ=' + str(c.Δ()))
+                        cardDBG(c)
+                    clean_screen()
+                    win.Back = c.back()
+                    win.show()
+                    cardDBG(c)
+                    while True:
+                        key = qetch()
+                        if key == " ":
+                            break
+                        elif key in lst:
+                            feedback = lst.index(key) * 10
+                            if feedback > 100 or feedback < 0:
+                                continue
+                        elif key == "t":
+                            task = Thread(target=speak, args=[win.Front.split("\n")[0]])
+                            task.run()
+                        else:
+                            if key == CTKey.UP:
+                                feedback += 1
+                            elif key == CTKey.DOWN:
+                                feedback -= 1
+                        win.percent = feedback / 100
+                        clean_screen()
+                        win.show()
+                        cardDBG(c)
                     c.review(feedback)
                     bulk_save(filePath, OverdueCardList + TaciturnCardList)
                     OverdueCardList, TaciturnCardList = bulk_load(filePath)
@@ -665,7 +768,7 @@ if __name__ == '__main__':
                 clean_screen()
             finally:
                 bulk_save(filePath, OverdueCardList + TaciturnCardList)
-        elif i == 'q':
+        elif i == "q":
             break
         else:
             break
