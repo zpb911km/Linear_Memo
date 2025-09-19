@@ -9,14 +9,19 @@ import sys
 import enum
 import unicodedata
 from threading import Thread
-import pyttsx3
 
-# 初始化发音引擎
-engine = pyttsx3.init()
-engine.setProperty("rate", 120)
-engine.setProperty("volume", 1.0)
-voices = engine.getProperty("voices")
-engine.setProperty("voice", "english")
+try:
+    import pyttsx3
+
+    # 初始化发音引擎
+    engine = pyttsx3.init()
+    engine.setProperty("rate", 120)
+    engine.setProperty("volume", 1.0)
+    voices = engine.getProperty("voices")
+    engine.setProperty("voice", "english")
+except Exception:
+    print("pyttsx3模块未安装，发音功能不可用")
+    engine = None
 
 DTFormat = r"%Y/%m/%d %H:%M"  # 存储时间的文本的格式，excel同款
 spliter = "\t"  # 存储文件的分隔符
@@ -24,7 +29,7 @@ spliter = "\t"  # 存储文件的分隔符
 Rchecktime = 0  # R==1时，抽查底数（越大越不易出现，等于0关闭抽查复习）
 MaxCalcLimit = 300  # R==1的判断条件
 ForgetLine = 0.4  # 遗忘标准（可调）
-NewCardAddConst = 10  # 每次计算推荐多少全新的卡片
+NewCardAdd = 10000  # 每次计算推荐多少全新的卡片
 
 if sys.platform.startswith("linux"):
     PATH = r"./"
@@ -75,11 +80,7 @@ def len_str(text):
 
 
 def center_str(text: str, length: int):
-    out = (
-        " " * int((length - len_str(text)) / 2)
-        + text
-        + " " * (length - int((length - len_str(text)) / 2) - len_str(text))
-    )
+    out = " " * int((length - len_str(text)) / 2) + text + " " * (length - int((length - len_str(text)) / 2) - len_str(text))
     return out
 
 
@@ -213,17 +214,8 @@ class TUI_Structure:
         terminalText += "━" * (self.columns - 2) + "┓"
         terminalText += "\n"
         # line 0
-        line = (
-            "┃"
-            + center_str(str(self.count), int(self.columns / 4) - 1)
-            + center_str(str(self.Overdue), int(self.columns / 4) - 1)
-            + center_str(str(self.Sum), int(self.columns / 4) - 1)
-        )
-        line += (
-            " " * (self.columns - len_str(line) - 5)
-            + "{:.2f}".format(self.percent)
-            + "┃"
-        )
+        line = "┃" + center_str(str(self.count), int(self.columns / 4) - 1) + center_str(str(self.Overdue), int(self.columns / 4) - 1) + center_str(str(self.Sum), int(self.columns / 4) - 1)
+        line += " " * (self.columns - len_str(line) - 5) + "{:.2f}".format(self.percent) + "┃"
         if len_str(line) > self.columns:
             terminalText += "┃" + " " * (self.columns - 2) + "┃"
         else:
@@ -274,9 +266,7 @@ class TUI_Structure:
             except Exception:
                 meaning = ""
             line += center_str(meaning, self.columns - 4)
-            nowLevel = (self.lines - len(terminalText.split("\n")) - 1) / (
-                self.lines - 4
-            )
+            nowLevel = (self.lines - len(terminalText.split("\n")) - 1) / (self.lines - 4)
             if nowLevel <= self.percent:
                 line += "│█┃"
             else:
@@ -325,16 +315,10 @@ def listcalc(l1, calc, l2) -> list:
 
 
 def OLS(x, y) -> float:
-    k = (sum(listcalc(x, "*", y)) - sum(x) * sum(y) / len(x)) / (
-        sum(listcalc(x, "*", x)) - (sum(x) ** 2) / len(x)
-    )
+    k = (sum(listcalc(x, "*", y)) - sum(x) * sum(y) / len(x)) / (sum(listcalc(x, "*", x)) - (sum(x) ** 2) / len(x))
     b = sum(y) / len(y) - k * sum(x) / len(x)
-    Rs = 1 - sum(
-        listcalc(listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2)
-    ) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
-    Ss = sum(
-        listcalc(listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2)
-    ) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
+    Rs = 1 - sum(listcalc(listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2)) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
+    Ss = sum(listcalc(listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2)) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
     return k, b, Rs, Ss
 
 
@@ -441,9 +425,7 @@ class card:
     def R(self) -> int:
         return self.basedata[6]
 
-    def review(
-        self, feedback: float
-    ) -> tuple[float, float]:  # 返回值表示是否解除过期状态
+    def review(self, feedback: float) -> tuple[float, float]:  # 返回值表示是否解除过期状态
         """feedback∈[0,100]"""
         if abs(feedback - 100) <= 0.00000000000001:
             self.basedata[6] = 2
@@ -509,8 +491,6 @@ def custom_sort_key(card: card):
 
 def bulk_load(path) -> tuple[list[card], list[card]]:
     # 批量导入数据
-    global NewCardAdd
-    NewCardAdd = NewCardAddConst
     with open(path, "r", encoding="UTF-8") as file:
         txt = file.read()
         lines = txt.split("\n")
@@ -598,15 +578,7 @@ def word_inquiry(word: str):
     outputA += word + "\t"
 
     try:
-        meaning = (
-            t.body.find("div", "contentPadding")
-            .find("div", "content", "b_cards")
-            .find("div", "rs_area", "b_cards")
-            .find("div", "lf_area")
-            .find("div", "qdef")
-            .find("ul")
-            .find_all("li")
-        )
+        meaning = t.body.find("div", "contentPadding").find("div", "content", "b_cards").find("div", "rs_area", "b_cards").find("div", "lf_area").find("div", "qdef").find("ul").find_all("li")
     except AttributeError:
         raise Exception("No such word!!")
 
@@ -619,25 +591,19 @@ def word_inquiry(word: str):
             outputA += Replace(prop) + Replace(mean)
         else:
             outputA += Replace(prop) + Replace(mean) + "<br />"
-    example_sentences = (
-        t.body.find("div", "contentPadding")
-        .find("div", "content", "b_cards")
-        .find("div", "rs_area", "b_cards")
-        .find("div", "lf_area")
-        .find("div", "se_div")
-        .find_all("div", "se_li")
-    )
+    example_sentences = t.body.find("div", "contentPadding").find("div", "content", "b_cards").find("div", "rs_area", "b_cards").find("div", "lf_area").find("div", "se_div").find_all("div", "se_li")
     sentences = []
     for sentence in example_sentences:
-        sentence = (
-            sentence.find("div", "se_li1")
-            .find("div", "sen_en", "b_regtxt")
-            .find_all("a")
-        )
+        sentence = sentence.find("div", "se_li1").find("div", "sen_en", "b_regtxt")
         en_sentence = ""
-        for gword in sentence:
-            en_sentence += gword.text + " "
-        sentences.append(en_sentence)
+        for word in sentence:
+            if word.text.strip() == "":
+                continue
+            if word.text.strip() in ["!", ".", ",", "?", ";", ":", '"', "'", "(", ")", "-", "_", "[", "]", "{", "}", "<", ">", "/"]:
+                en_sentence += word.text.strip()
+            else:
+                en_sentence += " " + word.text.strip()
+        sentences.append(en_sentence[1:])
     outputA += "<split>"
     for s in sentences:
         outputA += Replace(s) + "<br />"
@@ -672,7 +638,7 @@ if __name__ == "__main__":
     # filePath = files[0]
     file_noRpl(filePath)
     while True:
-        print("\nAdd, Review or Quit[a/A/r/Q]:", end="")
+        print("\nAdd, Review or Quit[a/A/r/q]:", end="")
         i = getch()
         if i == "A":
             try:
@@ -691,7 +657,11 @@ if __name__ == "__main__":
                     OverdueCardList, TaciturnCardList = bulk_load(filePath)
                     CardList = OverdueCardList + TaciturnCardList
                     word = input("-->")
-                    t = word_inquiry(word)
+                    try:
+                        t = word_inquiry(word)
+                    except Exception as e:
+                        print("发生错误，大概是单词不存在：", e)
+                        continue
                     F = t.split("\t")[0]
                     B = t.split("\t")[1]
                     print(F)
@@ -704,6 +674,7 @@ if __name__ == "__main__":
             OverdueCardList, TaciturnCardList = bulk_load(filePath)
             try:
                 while len(OverdueCardList) > 0:
+                    remove_flag = False
                     c = OverdueCardList[randint(0, min(len(OverdueCardList) - 1, 3))]  # 前三个里边抽取
                     clean_screen()
                     win = TUI_Structure()
@@ -715,10 +686,14 @@ if __name__ == "__main__":
                     win.show()
                     cardDBG(c)
                     lst = ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'"]
+                    # lst = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"]
                     feedback = 40
                     while True:
                         key = qetch()
                         if key == " ":
+                            break
+                        elif key == "`":
+                            remove_flag = True
                             break
                         elif key in lst:
                             feedback = lst.index(key) * 10
@@ -744,6 +719,9 @@ if __name__ == "__main__":
                         key = qetch()
                         if key == " ":
                             break
+                        elif key == "`":
+                            remove_flag = True
+                            break
                         elif key in lst:
                             feedback = lst.index(key) * 10
                             if feedback > 100 or feedback < 0:
@@ -760,6 +738,9 @@ if __name__ == "__main__":
                         clean_screen()
                         win.show()
                         cardDBG(c)
+                    if remove_flag:
+                        OverdueCardList.remove(c)
+                        continue
                     c.review(feedback)
                     bulk_save(filePath, OverdueCardList + TaciturnCardList)
                     OverdueCardList, TaciturnCardList = bulk_load(filePath)
