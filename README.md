@@ -1,11 +1,11 @@
 # Linear_Memo
 A tool may assist your memory
-Build with Tauri and Vue.js
+Build with Flask and Vue.js
 UI: Quasar Framework
 
 ## 介绍
 
-Linear_Memo是一个基于Tauri和Vue.js的跨平台桌面和移动应用，旨在帮助用户提高记忆能力。
+Linear_Memo是一个基于Flask和Vue.js的跨平台桌面和移动应用，旨在帮助用户提高记忆能力。
 
 ## 功能
 
@@ -45,3 +45,34 @@ Linear_Memo是一个基于Tauri和Vue.js的跨平台桌面和移动应用，旨�
 
 - 能够线性反馈记忆情况
 - 无硬性复习安排
+
+## 开发待办事项
+
+### 项目规划与架构设计
+1. 确定整体架构设计
+2. 制定开发计划和时间表
+
+### 环境搭建
+1. 安装Flask开发环境
+2. 配置Vue.js和Quasar框架
+3. 设置SQLite数据库环境
+
+### 核心功能实现
+1. 实现Card数据结构
+2. 实现线性反馈算法
+3. 实现最小二乘法(OLS)函数
+4. 实现卡片过期判断逻辑
+5. 实现数据库操作功能
+
+### 界面开发
+1. 开发背卡片界面
+2. 开发卡组管理界面
+3. 开发统计分析界面
+4. 开发设置界面
+
+### 集成与测试
+1. 集成所有功能模块
+2. 进行全面测试
+3. 优化用户界面和体验
+4. 打包和部署应用
+

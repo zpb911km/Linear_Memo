@@ -75,12 +75,18 @@ def file_noRpl(filePath):
 
 
 def len_str(text):
-    out = sum(2 if unicodedata.east_asian_width(char) in "FW" else 1 for char in text)
+    out = sum(
+        2 if unicodedata.east_asian_width(char) in "FW" else 1 for char in text
+    )
     return out
 
 
 def center_str(text: str, length: int):
-    out = " " * int((length - len_str(text)) / 2) + text + " " * (length - int((length - len_str(text)) / 2) - len_str(text))
+    out = (
+        " " * int((length - len_str(text)) / 2)
+        + text
+        + " " * (length - int((length - len_str(text)) / 2) - len_str(text))
+    )
     return out
 
 
@@ -214,8 +220,17 @@ class TUI_Structure:
         terminalText += "━" * (self.columns - 2) + "┓"
         terminalText += "\n"
         # line 0
-        line = "┃" + center_str(str(self.count), int(self.columns / 4) - 1) + center_str(str(self.Overdue), int(self.columns / 4) - 1) + center_str(str(self.Sum), int(self.columns / 4) - 1)
-        line += " " * (self.columns - len_str(line) - 5) + "{:.2f}".format(self.percent) + "┃"
+        line = (
+            "┃"
+            + center_str(str(self.count), int(self.columns / 4) - 1)
+            + center_str(str(self.Overdue), int(self.columns / 4) - 1)
+            + center_str(str(self.Sum), int(self.columns / 4) - 1)
+        )
+        line += (
+            " " * (self.columns - len_str(line) - 5)
+            + "{:.2f}".format(self.percent)
+            + "┃"
+        )
         if len_str(line) > self.columns:
             terminalText += "┃" + " " * (self.columns - 2) + "┃"
         else:
@@ -266,7 +281,9 @@ class TUI_Structure:
             except Exception:
                 meaning = ""
             line += center_str(meaning, self.columns - 4)
-            nowLevel = (self.lines - len(terminalText.split("\n")) - 1) / (self.lines - 4)
+            nowLevel = (self.lines - len(terminalText.split("\n")) - 1) / (
+                self.lines - 4
+            )
             if nowLevel <= self.percent:
                 line += "│█┃"
             else:
@@ -315,10 +332,20 @@ def listcalc(l1, calc, l2) -> list:
 
 
 def OLS(x, y) -> float:
-    k = (sum(listcalc(x, "*", y)) - sum(x) * sum(y) / len(x)) / (sum(listcalc(x, "*", x)) - (sum(x) ** 2) / len(x))
+    k = (sum(listcalc(x, "*", y)) - sum(x) * sum(y) / len(x)) / (
+        sum(listcalc(x, "*", x)) - (sum(x) ** 2) / len(x)
+    )
     b = sum(y) / len(y) - k * sum(x) / len(x)
-    Rs = 1 - sum(listcalc(listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2)) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
-    Ss = sum(listcalc(listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2)) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
+    Rs = 1 - sum(
+        listcalc(
+            listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2
+        )
+    ) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
+    Ss = sum(
+        listcalc(
+            listcalc(y, "-", listcalc(listcalc(x, "*", k), "+", b)), "**", 2
+        )
+    ) / sum(listcalc(listcalc(y, "-", (sum(y) / len(y))), "**", 2))
     return k, b, Rs, Ss
 
 
@@ -345,7 +372,7 @@ class card:
         R: int = 0,
     ) -> None:
         self.basedata = [F, B, T, H, S, Δ, R]
-        # 对位：         0，        1，2，3，4，5，6
+        # 对位：         0，1，2，3，4，5，6
         # 我也不想做如此愚蠢的操作啊
 
     def out_text(self) -> str:
@@ -425,7 +452,9 @@ class card:
     def R(self) -> int:
         return self.basedata[6]
 
-    def review(self, feedback: float) -> tuple[float, float]:  # 返回值表示是否解除过期状态
+    def review(
+        self, feedback: float
+    ) -> tuple[float, float]:  # 返回值表示是否解除过期状态
         """feedback∈[0,100]"""
         if abs(feedback - 100) <= 0.00000000000001:
             self.basedata[6] = 2
@@ -578,7 +607,15 @@ def word_inquiry(word: str):
     outputA += word + "\t"
 
     try:
-        meaning = t.body.find("div", "contentPadding").find("div", "content", "b_cards").find("div", "rs_area", "b_cards").find("div", "lf_area").find("div", "qdef").find("ul").find_all("li")
+        meaning = (
+            t.body.find("div", "contentPadding")
+            .find("div", "content", "b_cards")
+            .find("div", "rs_area", "b_cards")
+            .find("div", "lf_area")
+            .find("div", "qdef")
+            .find("ul")
+            .find_all("li")
+        )
     except AttributeError:
         raise Exception("No such word!!")
 
@@ -591,15 +628,44 @@ def word_inquiry(word: str):
             outputA += Replace(prop) + Replace(mean)
         else:
             outputA += Replace(prop) + Replace(mean) + "<br />"
-    example_sentences = t.body.find("div", "contentPadding").find("div", "content", "b_cards").find("div", "rs_area", "b_cards").find("div", "lf_area").find("div", "se_div").find_all("div", "se_li")
+    example_sentences = (
+        t.body.find("div", "contentPadding")
+        .find("div", "content", "b_cards")
+        .find("div", "rs_area", "b_cards")
+        .find("div", "lf_area")
+        .find("div", "se_div")
+        .find_all("div", "se_li")
+    )
     sentences = []
     for sentence in example_sentences:
-        sentence = sentence.find("div", "se_li1").find("div", "sen_en", "b_regtxt")
+        sentence = sentence.find("div", "se_li1").find(
+            "div", "sen_en", "b_regtxt"
+        )
         en_sentence = ""
         for word in sentence:
             if word.text.strip() == "":
                 continue
-            if word.text.strip() in ["!", ".", ",", "?", ";", ":", '"', "'", "(", ")", "-", "_", "[", "]", "{", "}", "<", ">", "/"]:
+            if word.text.strip() in [
+                "!",
+                ".",
+                ",",
+                "?",
+                ";",
+                ":",
+                '"',
+                "'",
+                "(",
+                ")",
+                "-",
+                "_",
+                "[",
+                "]",
+                "{",
+                "}",
+                "<",
+                ">",
+                "/",
+            ]:
                 en_sentence += word.text.strip()
             else:
                 en_sentence += " " + word.text.strip()
@@ -675,7 +741,9 @@ if __name__ == "__main__":
             try:
                 while len(OverdueCardList) > 0:
                     remove_flag = False
-                    c = OverdueCardList[randint(0, min(len(OverdueCardList) - 1, 3))]  # 前三个里边抽取
+                    c = OverdueCardList[
+                        randint(0, min(len(OverdueCardList) - 1, 3))
+                    ]  # 前三个里边抽取
                     clean_screen()
                     win = TUI_Structure()
                     # win.lines -= 1
@@ -685,7 +753,19 @@ if __name__ == "__main__":
                     win.Front = c.front()
                     win.show()
                     cardDBG(c)
-                    lst = ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'"]
+                    lst = [
+                        "a",
+                        "s",
+                        "d",
+                        "f",
+                        "g",
+                        "h",
+                        "j",
+                        "k",
+                        "l",
+                        ";",
+                        "'",
+                    ]
                     # lst = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"]
                     feedback = 40
                     while True:
@@ -700,7 +780,9 @@ if __name__ == "__main__":
                             if feedback > 100 or feedback < 0:
                                 continue
                         elif key == "t":
-                            task = Thread(target=speak, args=[win.Front.split("\n")[0]])
+                            task = Thread(
+                                target=speak, args=[win.Front.split("\n")[0]]
+                            )
                             task.run()
                         else:
                             if key == CTKey.UP:
@@ -727,7 +809,9 @@ if __name__ == "__main__":
                             if feedback > 100 or feedback < 0:
                                 continue
                         elif key == "t":
-                            task = Thread(target=speak, args=[win.Front.split("\n")[0]])
+                            task = Thread(
+                                target=speak, args=[win.Front.split("\n")[0]]
+                            )
                             task.run()
                         else:
                             if key == CTKey.UP:
