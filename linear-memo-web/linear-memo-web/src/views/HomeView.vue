@@ -47,32 +47,48 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="decks-list">
-    <!-- 遍历每个牌堆详细信息，并使用其 id 作为唯一的键 -->
-    <div v-for="deckDetail in deckDetails" :key="deckDetail.id" class="deck-item">
-      <div class="deck-container">
-        <h2 class="deck-name">{{ deckDetail.name }}</h2>
-        <ul class="deck-info">
-          <li>卡片数量: {{ deckDetail.cards_count }}</li>
-          <li>新学数量: {{ deckDetail.new_count }}</li>
-          <li>超时数量: {{ deckDetail.overtime_count }}</li>
-          <li>复习数量: {{ deckDetail.review_count }}</li>
-          <li>记住数量: {{ deckDetail.remembered_count }}</li>
-        </ul>
+  <div class="home-view">
+
+    <div class="decks-list">
+      <!-- 遍历每个牌堆详细信息，并使用其 id 作为唯一的键 -->
+      <div v-for="deckDetail in deckDetails" :key="deckDetail.id" class="deck-item">
+        <div class="deck-container">
+          <h2 class="deck-name">{{ deckDetail.name }}</h2>
+          <ul class="deck-info">
+            <li>卡片数量: {{ deckDetail.cards_count }}</li>
+            <li>新学数量: {{ deckDetail.new_count }}</li>
+            <li>超时数量: {{ deckDetail.overtime_count }}</li>
+            <li>复习数量: {{ deckDetail.review_count }}</li>
+            <li>记住数量: {{ deckDetail.remembered_count }}</li>
+          </ul>
+        </div>
+        <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link">复习</router-link>
       </div>
-      <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link">复习</router-link>
     </div>
   </div>
 </template>
 
 <style scoped>
-.decks-list {
+.home-view {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.decks-list {
+  width: 80%;
+  min-width: 600px;
+  align-items: center;
+  justify-content: center;
+  display: grid;
   gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
 }
 
 .deck-item {
+  width: 400px;
   border: 1px solid #ccc;
   border-radius: 8px;
   padding: 16px;

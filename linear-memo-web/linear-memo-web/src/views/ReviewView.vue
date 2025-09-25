@@ -16,11 +16,12 @@ const currentCard = ref<Card | null>(null)
 const currentDeck = ref<Deck | null>(null)
 const isLoading = ref(true)
 const total_overtime = ref(0.1)
-const current_overtime = ref(0)
+const current_overtime = ref(0.1)
 
 const progress = computed(() => {
   if (!currentDeck.value || !currentCard.value) return 0
-  return (current_overtime.value / total_overtime.value) * 100
+  console.log(current_overtime.value, total_overtime.value)
+  return ((total_overtime.value -current_overtime.value) / total_overtime.value) * 100
 })
 
 const handleReview = async (feedback: number) => {
@@ -46,6 +47,7 @@ onMounted(() => {
     .then(([deck, card]) => {
       currentDeck.value = deck
       total_overtime.value = deck.overtime_count
+      current_overtime.value = deck.overtime_count
       currentCard.value = card
       if (!currentCard.value) {
         router.push('/')

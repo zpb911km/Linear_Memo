@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from math import log
+import os
 from random import randint
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -9,10 +10,11 @@ from typing import List
 
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173"])
+CORS(app, origins="*")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///linear_memo.db"
 db = SQLAlchemy(app)
 DTFormat = r"%Y/%m/%d %H:%M"
+app.config["STATIC_FOLDER"] = os.path.join(os.path.dirname(__file__), "dist")
 
 
 class Deck(db.Model):
@@ -45,8 +47,15 @@ class Deck(db.Model):
         return len(cards)
 
     def count_overtime_cards(self) -> int:
-        cards = Card.query.filter_by(deck_id=self.id).all()
-        return len([card for card in cards if card.is_overtime()])
+        cards: List[Card] = Card.query.filter_by(deck_id=self.id).all()
+        arrangement: Arrangement = Arrangement.query.filter_by(
+            deck_id=self.id
+        ).first()
+        return min(
+            len([card for card in cards if card.is_needed_review()])
+            + arrangement.count,
+            self.count_cards(),
+        )
 
     def count_new_cards(self) -> int:
         arrangement = Arrangement.query.filter_by(deck_id=self.id).first()
@@ -114,6 +123,20 @@ class Card(db.Model):
         # 3. 其他情况都需要复习
         return True
 
+    def is_needed_review(self) -> bool:
+        # 1. 处理last_review为None的情况（新卡片）
+        if self.last_review is None:
+            return False
+        # 2. 检查是否未到复习时间
+        period = datetime.now() - self.last_review
+        if (
+            period.total_seconds() / 86400 < self.review_interval
+            and self.review_interval > 1  # 1天以下的卡片不算记得
+        ):
+            return False
+        # 3. 其他情况都需要复习
+        return True
+
     def overtime_days(self) -> float:
         if self.last_review is None:
             deck = Deck.query.filter_by(id=self.deck_id).first()
@@ -176,12 +199,12 @@ class Card(db.Model):
         # 处理永久记忆退化情况
         if retention == 1 and delta < max_delta * 0.8:
             retention = 0
-            stability = 40
+            stability = forget_line * 100
             delta = 1
 
-        if self.status and feedback <= 40:
+        if self.status and feedback <= forget_line * 100:
             retention = 0
-            stability = 40
+            stability = forget_line * 100
             delta = 1
 
         # 确保间隔为正
@@ -241,7 +264,7 @@ def try_init_db():
 
 # 卡组管理
 # 1. 创建卡组
-@app.route("/decks", methods=["POST"])
+@app.route("/api/decks", methods=["POST"])
 def create_deck():
     if not request.json:
         return jsonify({"error": "Invalid request"}), 400
@@ -257,7 +280,7 @@ def create_deck():
 
 
 # 2. 编辑卡组
-@app.route("/decks/<int:deck_id>", methods=["PUT"])
+@app.route("/api/decks/<int:deck_id>", methods=["PUT"])
 def edit_deck(deck_id: int):
     """
     编辑卡组信息，可修改名称、遗忘线、Ω、最大间隔参数
@@ -302,7 +325,7 @@ def edit_deck(deck_id: int):
 
 
 # 3. 删除卡组
-@app.route("/decks/<int:deck_id>", methods=["DELETE"])
+@app.route("/api/decks/<int:deck_id>", methods=["DELETE"])
 def delete_deck(deck_id: int):
     deck = Deck.query.filter_by(id=deck_id).first()
     if deck is None:
@@ -313,7 +336,7 @@ def delete_deck(deck_id: int):
 
 
 # 4. 列出卡组
-@app.route("/decks", methods=["GET"])
+@app.route("/api/decks", methods=["GET"])
 def list_decks():
     decks = Deck.query.all()
     return jsonify(
@@ -331,7 +354,7 @@ def list_decks():
 
 
 # 5. 卡组详情
-@app.route("/decks/<int:deck_id>", methods=["GET"])
+@app.route("/api/decks/<int:deck_id>", methods=["GET"])
 def get_deck(deck_id: int):
     deck = Deck.query.filter_by(id=deck_id).first()
     if deck is None:
@@ -356,7 +379,7 @@ def get_deck(deck_id: int):
 
 # 卡片管理
 # 1. 创建卡片
-@app.route("/cards", methods=["POST"])
+@app.route("/api/cards", methods=["POST"])
 def create_card():
     """
     创建卡片，需要指定卡组id、正反面文字
@@ -380,7 +403,7 @@ def create_card():
 
 
 # 2. 编辑卡片
-@app.route("/cards/<int:card_id>", methods=["PUT"])
+@app.route("/api/cards/<int:card_id>", methods=["PUT"])
 def edit_card(card_id: int):
     """
     编辑卡片信息，可修改卡片正反面
@@ -406,7 +429,7 @@ def edit_card(card_id: int):
 
 
 # 3. 删除卡片
-@app.route("/cards/<int:card_id>", methods=["DELETE"])
+@app.route("/api/cards/<int:card_id>", methods=["DELETE"])
 def delete_card(card_id: int):
     card = Card.query.filter_by(id=card_id).first()
     if card is None:
@@ -417,7 +440,7 @@ def delete_card(card_id: int):
 
 
 # 4. 列出卡组的卡片
-@app.route("/cards", methods=["GET"])
+@app.route("/api/cards", methods=["GET"])
 def list_cards():
     deck_id = request.args.get("deck_id")
     if deck_id is not None:
@@ -433,7 +456,7 @@ def list_cards():
 
 
 # 5. 复习卡片
-@app.route("/cards/<int:card_id>/review", methods=["POST"])
+@app.route("/api/cards/<int:card_id>/review", methods=["POST"])
 def review_card(card_id: int):
     """
     复习卡片，需要提供用户反馈分数
@@ -463,7 +486,7 @@ def review_card(card_id: int):
 
 
 # 6. 列出卡组的待复习卡片
-@app.route("/cards/review", methods=["GET"])
+@app.route("/api/cards/review", methods=["GET"])
 def list_review_cards():
     """
     列出待复习卡片，指定卡组id
@@ -485,7 +508,7 @@ def list_review_cards():
 
 
 # 7. 搜索卡组的卡片
-@app.route("/cards/search", methods=["GET"])
+@app.route("/api/cards/search", methods=["GET"])
 def search_cards():
     """
     搜索卡组的卡片，指定卡组id和关键字
@@ -516,7 +539,7 @@ def search_cards():
 
 
 # 8. 返回当前最需要复习的卡片
-@app.route("/next_card", methods=["GET"])
+@app.route("/api/next_card", methods=["GET"])
 def next_card():
     """
     返回当前最需要复习的卡片，指定卡组id
@@ -542,20 +565,20 @@ def next_card():
     )
     if len(cards) == 0:
         return jsonify({"message": "No cards to review"}), 204
-    # print(cards[0].front)
+    index = 1 if len(cards) > 1 else 0
     return jsonify(
         {
-            "id": cards[0].id,
-            "deck_id": cards[0].deck_id,
-            "front": cards[0].front,
-            "back": cards[0].back,
+            "id": cards[index].id,
+            "deck_id": cards[index].deck_id,
+            "front": cards[index].front,
+            "back": cards[index].back,
         }
     )
 
 
 # 安排管理
 # 1. 创建安排
-@app.route("/arrangements", methods=["POST"])
+@app.route("/api/arrangements", methods=["POST"])
 def create_arrangement():
     """
     创建安排，指定卡组id, 数量
@@ -577,7 +600,7 @@ def create_arrangement():
 
 
 # 2. 编辑安排
-@app.route("/arrangements/<int:arrangement_id>", methods=["PUT"])
+@app.route("/api/arrangements/<int:arrangement_id>", methods=["PUT"])
 def edit_arrangement(arrangement_id: int):
     """
     编辑安排，可修改日期和卡片数量
@@ -598,7 +621,7 @@ def edit_arrangement(arrangement_id: int):
 
 
 # 3. 删除安排
-@app.route("/arrangements/<int:arrangement_id>", methods=["DELETE"])
+@app.route("/api/arrangements/<int:arrangement_id>", methods=["DELETE"])
 def delete_arrangement(arrangement_id: int):
     arrangement = Arrangement.query.filter_by(id=arrangement_id).first()
     if arrangement is None:
@@ -609,7 +632,7 @@ def delete_arrangement(arrangement_id: int):
 
 
 # 4. 列出卡组的安排
-@app.route("/arrangements", methods=["GET"])
+@app.route("/api/arrangements", methods=["GET"])
 def list_arrangements():
     deck_id = request.args.get("deck_id")
     if deck_id is not None:
@@ -617,6 +640,17 @@ def list_arrangements():
     else:
         return jsonify({"error": "deck_id is required"}), 400
     return jsonify({"id": arrangement.id, "count": arrangement.count})
+
+
+# 静态文件
+@app.route("/<path:path>")
+def static_file(path):
+    return send_from_directory(app.config["STATIC_FOLDER"], path)
+
+
+@app.route("/")
+def index():
+    return send_from_directory(app.config["STATIC_FOLDER"], "index.html")
 
 
 if __name__ == "__main__":

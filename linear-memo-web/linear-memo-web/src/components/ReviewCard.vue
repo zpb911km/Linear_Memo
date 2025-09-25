@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import type { Card } from '@/utils/types'
 
 const props = defineProps<{ card: Card }>()
@@ -48,6 +48,13 @@ const stopDragging = (e: MouseEvent) => {
   isDragging.value = false
   feedbackHandler(e)
 }
+
+const feedbackBarColor = computed(() => {
+  const red = Math.round(255 * (1 - feedback.value / 100))
+  const green = Math.round(255 * (feedback.value / 100))
+  return `linear-gradient(to right, rgb(${red}, 0, ${green}), rgb(${red}, ${green}, 50))`
+})
+
 </script>
 <template>
   <div class="review-card" :class="{ flipped: fliped }">
@@ -63,8 +70,8 @@ const stopDragging = (e: MouseEvent) => {
           @mouseup="stopDragging"
           @mousemove="draggingHandler"
         >
-          <div class="feedback-bar" :style="{ width: `${feedback}%` }">
-            <div class="feedback-value">{{ feedback.toFixed(0) }}%</div>
+          <div class="feedback-bar" :style="{ width: `${feedback}%`, background: feedbackBarColor }">
+            <div class="feedback-value">{{ feedback.toFixed(0) }}</div>
           </div>
         </div>
         <button class="btn-100" @mousedown="feedback = 100" @click="koHandler">k.o.</button>
@@ -85,7 +92,6 @@ const stopDragging = (e: MouseEvent) => {
 .card-back {
   width: 100%;
   height: 400px;
-  overflow-y: auto;
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -132,11 +138,15 @@ const stopDragging = (e: MouseEvent) => {
 .card-front-inner,
 .card-back-inner {
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  width: 100%;
 }
 
 .card-front-inner {
@@ -170,7 +180,6 @@ const stopDragging = (e: MouseEvent) => {
 
 .feedback-bar {
   height: 100%;
-  background: linear-gradient(to right, #4facfe, #00f2fe);
   border-radius: 24px;
   /* transition: width 0.2s ease-out; */
   position: relative;
