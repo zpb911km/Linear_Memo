@@ -79,7 +79,6 @@ onUnmounted(() => {
 
 .decks-list {
   width: 80%;
-  min-width: 600px;
   align-items: center;
   justify-content: center;
   display: grid;
@@ -88,7 +87,7 @@ onUnmounted(() => {
 }
 
 .deck-item {
-  width: 400px;
+  width: 300px;
   border: 1px solid #ccc;
   border-radius: 8px;
   padding: 16px;

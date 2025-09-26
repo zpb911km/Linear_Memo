@@ -9,9 +9,10 @@ const fliped = ref(false)
 const feedback = ref(40)
 let isDragging = ref(false)
 
-const feedbackHandler = (e: MouseEvent) => {
+const feedbackHandler = (e: MouseEvent | TouchEvent) => {
   if (isDragging.value) return
-  if (e.type !== 'mouseup') return
+  // 检查事件类型，确保只在鼠标释放或触摸结束时触发
+  if ((e instanceof MouseEvent && e.type !== 'mouseup') || (e instanceof TouchEvent && e.type !== 'touchend')) return
   fliped.value = false
   isDragging.value = false
   emit('review', feedback.value)
@@ -26,7 +27,7 @@ const koHandler = async () => {
   feedback.value = 40
 }
 
-const draggingHandler = (e: MouseEvent) => {
+const draggingHandler = (e: MouseEvent | TouchEvent) => {
   if (!isDragging.value) return
   // 确保 e.currentTarget 是 HTMLElement
   const target = e.currentTarget as HTMLElement | null
@@ -34,17 +35,29 @@ const draggingHandler = (e: MouseEvent) => {
 
   const rect = target.getBoundingClientRect()
 
-  const x = e.clientX - rect.left
+  // 获取触摸点或鼠标点的 x 坐标
+  let clientX: number;
+  if (e instanceof TouchEvent) {
+    clientX = e.touches[0].clientX; // 获取第一个触摸点的 clientX
+  } else {
+    clientX = e.clientX;
+  }
+
+  const x = clientX - rect.left
   const width = rect.width
   const percent = (x / width) * 100
   feedback.value = Math.min(Math.max(0.1, percent), 100) // 确保反馈值在0到100之间
 }
 
-const startDragging = (e: MouseEvent) => {
+const startDragging = (e: MouseEvent | TouchEvent) => {
   isDragging.value = true
+  // 阻止默认行为，防止页面滚动
+  if (e instanceof TouchEvent) {
+    e.preventDefault();
+  }
 }
 
-const stopDragging = (e: MouseEvent) => {
+const stopDragging = (e: MouseEvent | TouchEvent) => {
   isDragging.value = false
   feedbackHandler(e)
 }
@@ -69,6 +82,9 @@ const feedbackBarColor = computed(() => {
           @mousedown="startDragging"
           @mouseup="stopDragging"
           @mousemove="draggingHandler"
+          @touchstart="startDragging"
+          @touchend="stopDragging"
+          @touchmove="draggingHandler"
         >
           <div class="feedback-bar" :style="{ width: `${feedback}%`, background: feedbackBarColor }">
             <div class="feedback-value">{{ feedback.toFixed(0) }}</div>
