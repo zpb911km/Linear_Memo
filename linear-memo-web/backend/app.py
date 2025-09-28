@@ -36,6 +36,10 @@ class Deck(db.Model):
         cascade="all, delete-orphan",
     )
 
+    def __init__(self, id: int, name: str):
+        self.id = id
+        self.name = name
+
     def __str__(self):
         return f"Deck(id={self.id}, name={self.name})"
 
@@ -48,9 +52,11 @@ class Deck(db.Model):
 
     def count_overtime_cards(self) -> int:
         cards: List[Card] = Card.query.filter_by(deck_id=self.id).all()
-        arrangement: Arrangement = Arrangement.query.filter_by(
+        arrangement: Arrangement | None = Arrangement.query.filter_by(
             deck_id=self.id
         ).first()
+        if arrangement is None:
+            raise ValueError("Arrangement not found")
         return min(
             len([card for card in cards if card.is_needed_review()])
             + arrangement.count,
@@ -235,6 +241,11 @@ class History(db.Model):
     review_date = db.Column(db.DateTime, nullable=False)
     stability = db.Column(db.Float, nullable=False)
 
+    def __init__(self, card_id: int, review_date: datetime, stability: float):
+        self.card_id = card_id
+        self.review_date = review_date
+        self.stability = stability
+
     def __str__(self):
         return f"History(id={self.id}, card_id={self.card_id}, review_date={self.review_date}, stability={self.stability})"
 
@@ -246,6 +257,10 @@ class Arrangement(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     deck_id = db.Column(db.Integer, db.ForeignKey("deck.id"), nullable=False)
     count = db.Column(db.Integer, nullable=False)
+
+    def __init__(self, deck_id: int, count: int):
+        self.deck_id = deck_id
+        self.count = count
 
     def __str__(self):
         return f"Arrangement(id={self.id}, deck_id={self.deck_id}, count={self.count})"
@@ -269,7 +284,7 @@ def create_deck():
     if not request.json:
         return jsonify({"error": "Invalid request"}), 400
     name = request.json.get("name")
-    max_deck_id = Deck.query.order_by(Deck.id.desc()).first().id
+    max_deck_id = Deck.query.order_by(Deck.id.desc()).first().id   # type: ignore
     new_deck_id = max_deck_id + 1
     new_deck = Deck(id=new_deck_id, name=name)
     new_arrangement = Arrangement(deck_id=new_deck_id, count=10)
@@ -472,7 +487,7 @@ def review_card(card_id: int):
     feedback = float(feedback)
     if feedback < 0 or feedback > 100:
         return jsonify({"error": "feedback should be in [0, 100]"}), 400
-    card: Card = Card.query.filter_by(id=card_id).first()
+    card: Card | None = Card.query.filter_by(id=card_id).first()
     if card is None:
         return jsonify({"error": "Card not found"}), 404
     try:
@@ -636,9 +651,11 @@ def delete_arrangement(arrangement_id: int):
 def list_arrangements():
     deck_id = request.args.get("deck_id")
     if deck_id is not None:
-        arrangement = Arrangement.query.filter_by(deck_id=deck_id).first()
+        arrangement: Arrangement | None = Arrangement.query.filter_by(deck_id=deck_id).first()
     else:
         return jsonify({"error": "deck_id is required"}), 400
+    if arrangement is None:
+        return jsonify({"error": "Arrangement not found"}), 404
     return jsonify({"id": arrangement.id, "count": arrangement.count})
 
 

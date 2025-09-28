@@ -2,3 +2,5 @@ linear_memo.db
 import_nmf_to_db.py
 dist/
 linear-memo-web/backend/instance/current.NMF
+pull.sh
+db.prg
