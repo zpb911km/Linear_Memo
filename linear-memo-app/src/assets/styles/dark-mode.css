@@ -1,0 +1,62 @@
+
+:root {
+  /* 浅色模式变量 */
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --header-bg: #2c3e50;
+  --header-text: #ecf0f1;
+  --card-bg: #ffffff;
+  --card-border: #ddd;
+  --button-primary: #3498db;
+  --button-primary-hover: #2980b9;
+  --button-success: #4caf50;
+  --button-success-hover: #45a049;
+  --button-warning: #ff9800;
+  --button-warning-hover: #e68900;
+  --button-danger: #f44336;
+  --button-danger-hover: #da190b;
+  --input-border: #ccc;
+  --input-bg: #ffffff;
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --modal-bg: #ffffff;
+  --progress-bg: rgba(0, 0, 0, 0.1);
+  --progress-fill: #3498db;
+  --snackbar-success: #4caf50;
+  --snackbar-error: #f44336;
+  --snackbar-warning: #ff9800;
+  --snackbar-info: #2196f3;
+}
+
+/* 深色模式变量 */
+.dark {
+  --bg-color: #1a1a1a;
+  --text-color: #f0f0f0;
+  --header-bg: #1a2530;
+  --header-text: #ecf0f1;
+  --card-bg: #2d2d2d;
+  --card-border: #444;
+  --button-primary: #2980b9;
+  --button-primary-hover: #3498db;
+  --button-success: #45a049;
+  --button-success-hover: #4caf50;
+  --button-warning: #e68900;
+  --button-warning-hover: #ff9800;
+  --button-danger: #da190b;
+  --button-danger-hover: #f44336;
+  --input-border: #555;
+  --input-bg: #333;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --modal-bg: #2d2d2d;
+  --progress-bg: rgba(255, 255, 255, 0.1);
+  --progress-fill: #2980b9;
+  --snackbar-success: #45a049;
+  --snackbar-error: #da190b;
+  --snackbar-warning: #e68900;
+  --snackbar-info: #1976d2;
+}
+
+/* 全局深色模式样式 */
+.dark {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
