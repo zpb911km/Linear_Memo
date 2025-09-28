@@ -1,7 +1,5 @@
-use sea_orm::{EntityTrait, Set, ColumnTrait, QueryFilter, DatabaseConnection};
+use sea_orm::{EntityTrait, Set, ColumnTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use tauri::State;
 use chrono::NaiveDateTime;
 
 mod database;
@@ -67,7 +65,11 @@ fn update_settings(_settings: Settings) -> Result<(), String> {
 
 // 卡组管理命令
 #[tauri::command]
-async fn create_deck(name: &str, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn create_deck(name: &str) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let new_deck = deck::ActiveModel {
         id: Default::default(),
         name: Set(name.to_string()),
@@ -103,9 +105,12 @@ async fn update_deck(
     forget_line: Option<f64>, 
     omega: Option<f64>, 
     max_delta: Option<i32>, 
-    arrangement: Option<i32>,
-    db: State<'_, Arc<DatabaseConnection>>
+    arrangement: Option<i32>
 ) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     // 更新卡组信息
     let deck_model = deck::Entity::find_by_id(id)
         .one(db.as_ref())
@@ -155,7 +160,11 @@ async fn update_deck(
 }
 
 #[tauri::command]
-async fn delete_deck(id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn delete_deck(id: i32) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     deck::Entity::delete_by_id(id)
         .exec(db.as_ref())
         .await
@@ -165,7 +174,11 @@ async fn delete_deck(id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<
 }
 
 #[tauri::command]
-async fn list_decks(db: State<'_, Arc<DatabaseConnection>>) -> Result<Vec<deck::Model>, String> {
+async fn list_decks() -> Result<Vec<deck::Model>, String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let decks = deck::Entity::find()
         .all(db.as_ref())
         .await
@@ -175,7 +188,11 @@ async fn list_decks(db: State<'_, Arc<DatabaseConnection>>) -> Result<Vec<deck::
 }
 
 #[tauri::command]
-async fn get_deck_detail(id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<DeckDetail, String> {
+async fn get_deck_detail(id: i32) -> Result<DeckDetail, String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     // 获取卡组基本信息
     let deck_model = deck::Entity::find_by_id(id)
         .one(db.as_ref())
@@ -197,7 +214,11 @@ async fn get_deck_detail(id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Res
 
 // 卡片管理命令
 #[tauri::command]
-async fn create_card(deck_id: i32, front: &str, back: &str, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn create_card(deck_id: i32, front: &str, back: &str) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let new_card = card::ActiveModel {
         id: Default::default(),
         deck_id: Set(deck_id),
@@ -218,7 +239,11 @@ async fn create_card(deck_id: i32, front: &str, back: &str, db: State<'_, Arc<Da
 }
 
 #[tauri::command]
-async fn update_card(id: i32, front: Option<String>, back: Option<String>, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn update_card(id: i32, front: Option<String>, back: Option<String>) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let card_model = card::Entity::find_by_id(id)
         .one(db.as_ref())
         .await
@@ -243,7 +268,11 @@ async fn update_card(id: i32, front: Option<String>, back: Option<String>, db: S
 }
 
 #[tauri::command]
-async fn delete_card(id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn delete_card(id: i32) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     card::Entity::delete_by_id(id)
         .exec(db.as_ref())
         .await
@@ -253,7 +282,11 @@ async fn delete_card(id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<
 }
 
 #[tauri::command]
-async fn list_cards(deck_id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<Vec<CardWithReview>, String> {
+async fn list_cards(deck_id: i32) -> Result<Vec<CardWithReview>, String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let cards = card::Entity::find()
         .filter(card::Column::DeckId.eq(deck_id))
         .all(db.as_ref())
@@ -264,7 +297,11 @@ async fn list_cards(deck_id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Res
 }
 
 #[tauri::command]
-async fn review_card_cmd(id: i32, feedback: f64, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn review_card_cmd(id: i32, feedback: f64) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     // 获取卡片
     let card_model = card::Entity::find_by_id(id)
         .one(db.as_ref())
@@ -295,7 +332,11 @@ async fn review_card_cmd(id: i32, feedback: f64, db: State<'_, Arc<DatabaseConne
 }
 
 #[tauri::command]
-async fn list_review_cards(deck_id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<Vec<CardWithReview>, String> {
+async fn list_review_cards(deck_id: i32) -> Result<Vec<CardWithReview>, String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let cards = card::Entity::find()
         .filter(card::Column::DeckId.eq(deck_id))
         .filter(card::Column::Status.eq(false))
@@ -314,7 +355,11 @@ async fn list_review_cards(deck_id: i32, db: State<'_, Arc<DatabaseConnection>>)
 }
 
 #[tauri::command]
-async fn search_cards(deck_id: i32, keyword: &str, db: State<'_, Arc<DatabaseConnection>>) -> Result<Vec<CardWithReview>, String> {
+async fn search_cards(deck_id: i32, keyword: &str) -> Result<Vec<CardWithReview>, String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let cards = card::Entity::find()
         .filter(card::Column::DeckId.eq(deck_id))
         .filter(
@@ -329,7 +374,11 @@ async fn search_cards(deck_id: i32, keyword: &str, db: State<'_, Arc<DatabaseCon
 }
 
 #[tauri::command]
-async fn next_card(deck_id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<Option<CardWithReview>, String> {
+async fn next_card(deck_id: i32) -> Result<Option<CardWithReview>, String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let cards = card::Entity::find()
         .filter(card::Column::DeckId.eq(deck_id))
         .filter(card::Column::Status.eq(false))
@@ -367,7 +416,11 @@ async fn next_card(deck_id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Resu
 
 // 安排管理命令
 #[tauri::command]
-async fn create_arrangement(deck_id: i32, count: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn create_arrangement(deck_id: i32, count: i32) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let new_arrangement = arrangement::ActiveModel {
         id: Default::default(),
         deck_id: Set(deck_id),
@@ -383,7 +436,11 @@ async fn create_arrangement(deck_id: i32, count: i32, db: State<'_, Arc<Database
 }
 
 #[tauri::command]
-async fn update_arrangement(id: i32, count: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn update_arrangement(id: i32, count: i32) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let arrangement_model = arrangement::Entity::find_by_id(id)
         .one(db.as_ref())
         .await
@@ -402,7 +459,11 @@ async fn update_arrangement(id: i32, count: i32, db: State<'_, Arc<DatabaseConne
 }
 
 #[tauri::command]
-async fn delete_arrangement(id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<(), String> {
+async fn delete_arrangement(id: i32) -> Result<(), String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     arrangement::Entity::delete_by_id(id)
         .exec(db.as_ref())
         .await
@@ -412,7 +473,11 @@ async fn delete_arrangement(id: i32, db: State<'_, Arc<DatabaseConnection>>) -> 
 }
 
 #[tauri::command]
-async fn list_arrangements(deck_id: i32, db: State<'_, Arc<DatabaseConnection>>) -> Result<arrangement::Model, String> {
+async fn list_arrangements(deck_id: i32) -> Result<arrangement::Model, String> {
+    // 确保数据库已初始化
+    init_database().await.map_err(|e| e.to_string())?;
+    let db = get_database();
+    
     let arrangement_model = arrangement::Entity::find()
         .filter(arrangement::Column::DeckId.eq(deck_id))
         .one(db.as_ref())
@@ -428,13 +493,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|_app| {
-            tauri::async_runtime::block_on(async {
-                // 初始化数据库
-                init_database().await.expect("Failed to initialize database");
-            });
+            // 数据库将在第一次访问时自动初始化
             Ok(())
         })
-        .manage(get_database())
         .invoke_handler(tauri::generate_handler![
             greet,
             // 设置管理
