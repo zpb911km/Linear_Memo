@@ -2,3 +2,6 @@ linear_memo.db
 import_nmf_to_db.py
 dist/
 linear-memo-web/backend/instance/current.NMF
+app.py
+migration_plan.md
+linear-memo-app/.vscode/extensions.json
