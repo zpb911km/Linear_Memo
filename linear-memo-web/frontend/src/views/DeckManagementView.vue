@@ -118,46 +118,6 @@ const saveDeck = async () => {
   }
 }
 
-// 保存卡片
-// const saveCards = async (updatedCards: Card[]) => {
-//   if (editingDeck.value) {
-//     const deckId = editingDeck.value.id
-//     // 更新卡片数据
-//     for (const card of updatedCards) {
-//       if (card.id) {
-//         // 更新现有卡片
-//         await updateCard(card.id, {
-//           front: card.front,
-//           back: card.back,
-//         })
-//       } else {
-//         // 添加新卡片
-//         await addCard({
-//           deck_id: deckId,
-//           front: card.front,
-//           back: card.back,
-//         })
-//       }
-//     }
-
-//     // 删除已移除的卡片
-//     const updatedCardIds = updatedCards
-//       .map((c) => c.id)
-//       .filter((id) => id !== undefined) as number[]
-//     const originalCardIds = cards.value.map((c) => c.id)
-//     const deletedCardIds = originalCardIds.filter((id) => !updatedCardIds.includes(id))
-
-//     for (const cardId of deletedCardIds) {
-//       await deleteCard(cardId)
-//     }
-
-//     // 重新加载卡片数据
-//     await loadCardsForDeck(deckId)
-//   }
-
-//   closeCardEditor()
-// }
-
 const addCards = async (newCards: Card[]) => {
   if (editingDeck.value) {
     const deckId = editingDeck.value.id
@@ -307,6 +267,8 @@ onMounted(() => {
 <style scoped>
 .deck-management {
   padding: 2rem;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .deck-list {
@@ -318,9 +280,10 @@ onMounted(() => {
 
 .deck-item {
   padding: 1.5rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: var(--color-card-background);
+  box-shadow: 0 2px 4px var(--color-card-shadow);
 }
 
 .deck-item h3 {
@@ -348,28 +311,45 @@ onMounted(() => {
 
 .edit-details-btn,
 .edit-name-btn {
-  background-color: #42a5f5;
+  background-color: var(--color-button-primary);
   color: white;
+}
+
+.edit-details-btn:hover,
+.edit-name-btn:hover {
+  background-color: var(--color-button-primary-hover);
 }
 
 .edit-btn {
-  background-color: #4ecdc4;
+  background-color: var(--color-button-secondary);
   color: white;
 }
 
+.edit-btn:hover {
+  background-color: var(--color-button-secondary-hover);
+}
+
 .delete-btn {
-  background-color: #ff6b6b;
+  background-color: var(--color-button-danger);
   color: white;
+}
+
+.delete-btn:hover {
+  background-color: var(--color-button-danger-hover);
 }
 
 .add-deck-btn {
   padding: 0.5rem 1rem;
-  background-color: #1a936f;
+  background-color: var(--color-button-primary);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+}
+
+.add-deck-btn:hover {
+  background-color: var(--color-button-primary-hover);
 }
 
 /* 弹窗样式 */
@@ -387,14 +367,15 @@ onMounted(() => {
 }
 
 .modal-content {
-  background-color: white;
+  background-color: var(--color-card-background);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--color-card-shadow);
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--color-border);
 }
 
 .modal-header {
@@ -402,18 +383,19 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .deck-name-input {
   font-size: 1.2rem;
   font-weight: bold;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 0.5rem;
   flex: 1;
   margin-right: 1rem;
-  background-color: #f5f5f5;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .close-btn {
@@ -421,7 +403,7 @@ onMounted(() => {
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #999;
+  color: var(--color-text-secondary);
   padding: 0;
   width: 30px;
   height: 30px;
@@ -431,7 +413,7 @@ onMounted(() => {
 }
 
 .close-btn:hover {
-  color: #666;
+  color: var(--color-text);
 }
 
 .modal-body {
@@ -439,11 +421,12 @@ onMounted(() => {
   overflow-y: auto;
   padding: 1rem 1.5rem;
 }
+
 .modal-header h2 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  color: var(--color-text);
 }
 
 .form-group {
@@ -454,27 +437,30 @@ label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: bold;
+  color: var(--color-text);
 }
 
 .form-control {
   width: 100%;
   padding: 0.5rem;
   font-size: 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .modal-footer {
   display: flex;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
 }
 
 .save-btn,
 .cancel-btn {
   padding: 0.5rem 1rem;
-  background-color: #1a936f;
+  background-color: var(--color-button-primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -482,7 +468,15 @@ label {
   font-size: 0.9rem;
 }
 
+.save-btn:hover {
+  background-color: var(--color-button-primary-hover);
+}
+
 .cancel-btn {
-  background-color: #ff6b6b;
+  background-color: var(--color-button-danger);
+}
+
+.cancel-btn:hover {
+  background-color: var(--color-button-danger-hover);
 }
 </style>

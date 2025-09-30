@@ -55,18 +55,22 @@ const settings = ref({
 <style scoped>
 .settings-page {
   padding: 2rem;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .settings-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: var(--color-card-background);
+  box-shadow: 0 2px 4px var(--color-card-shadow);
 }
 
 .settings-section h2 {
   margin-top: 0;
+  color: var(--color-text);
 }
 
 .setting-item {
@@ -78,22 +82,29 @@ const settings = ref({
 
 .setting-item label {
   font-weight: bold;
+  color: var(--color-text);
 }
 
 .setting-item input,
 .setting-item select {
   padding: 0.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .save-btn {
   padding: 0.5rem 1rem;
-  background-color: #1a936f;
+  background-color: var(--color-button-primary);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+}
+
+.save-btn:hover {
+  background-color: var(--color-button-primary-hover);
 }
 </style>

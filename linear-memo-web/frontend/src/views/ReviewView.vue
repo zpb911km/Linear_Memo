@@ -89,6 +89,8 @@ onMounted(() => {
   max-width: 800px;
   margin: 0 auto;
   padding: 24px;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .review-header {
@@ -98,7 +100,7 @@ onMounted(() => {
 .deck-title {
   font-size: 28px;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--color-text);
   margin-bottom: 16px;
 }
 
@@ -109,20 +111,20 @@ onMounted(() => {
 .progress-text {
   display: block;
   font-size: 14px;
-  color: #7f8c8d;
+  color: var(--color-text-secondary);
   margin-bottom: 8px;
 }
 
 .progress-bar {
   height: 8px;
-  background-color: #ecf0f1;
+  background-color: var(--color-progress-background);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(to right, #4facfe, #00f2fe);
+  background: linear-gradient(to right, var(--color-button-primary), var(--color-button-primary-hover));
   transition: width 0.3s ease;
 }
 
@@ -137,9 +139,9 @@ onMounted(() => {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(0, 0, 0, 0.1);
+  border: 4px solid var(--color-border);
   border-radius: 50%;
-  border-top-color: #4facfe;
+  border-top-color: var(--color-button-primary);
   animation: spin 1s linear infinite;
   margin-bottom: 16px;
 }

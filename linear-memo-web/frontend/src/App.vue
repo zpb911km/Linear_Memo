@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
 import { useNotificationStore } from './stores/notificationStore'
+import { useThemeStore } from './stores/themeStore'
 import Snackbar from './components/Snackbar.vue'
 import ProgressBar from './components/ProgressBar.vue'
 
 const notificationStore = useNotificationStore()
+const themeStore = useThemeStore()
+
+const toggleTheme = () => {
+  themeStore.toggleTheme()
+}
 </script>
 
 <template>
@@ -23,6 +29,9 @@ const notificationStore = useNotificationStore()
           <RouterLink to="/decks" class="nav-link" active-class="active">📁</RouterLink>
           <!-- <RouterLink to="/stats" class="nav-link" active-class="active">📅</RouterLink>
           <RouterLink to="/settings" class="nav-link" active-class="active">⚙</RouterLink> -->
+          <button class="theme-toggle-button" @click="toggleTheme">
+            {{ themeStore.theme === 'light' ? '🌙' : themeStore.theme === 'dark' ? '☀️' : '🌓' }}
+          </button>
         </nav>
       </div>
     </header>
@@ -46,12 +55,14 @@ const notificationStore = useNotificationStore()
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 header {
-  background-color: #2c3e50;
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-navbar-background);
+  color: var(--color-navbar-text);
+  box-shadow: 0 2px 4px var(--color-card-shadow);
 }
 
 .header-content {
@@ -72,10 +83,11 @@ header {
   display: flex;
   margin: 0;
   padding: none;
+  flex: 1;
 }
 
 .nav-link {
-  color: #ecf0f1;
+  color: var(--color-navbar-text);
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
@@ -83,12 +95,28 @@ header {
 }
 
 .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--color-navbar-hover);
 }
 
 .nav-link.active {
-  background-color: #3498db;
+  background-color: var(--color-navbar-active);
   color: white;
+}
+
+.theme-toggle-button {
+  background: none;
+  border: none;
+  color: var(--color-navbar-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+  margin-left: auto;
+}
+
+.theme-toggle-button:hover {
+  background-color: var(--color-navbar-hover);
 }
 
 .main-content {

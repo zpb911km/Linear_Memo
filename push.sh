@@ -1,0 +1,3 @@
+scp -i ~/ssh_keys/guiyun_ssh -r /media/zpb/data/codes/Rust/Linear_Memo/linear-memo-web/backend/dist root@103.151.217.252:/root/linear-memo/
+scp -i ~/ssh_keys/guiyun_ssh -r /media/zpb/data/codes/Rust/Linear_Memo/linear-memo-web/backend/app.py root@103.151.217.252:/root/linear-memo/
+scp -i ~/ssh_keys/guiyun_ssh -r /media/zpb/data/codes/Rust/Linear_Memo/linear-memo-web/backend/memo.service root@103.151.217.252:/root/linear-memo/

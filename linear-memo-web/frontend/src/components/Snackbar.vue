@@ -82,10 +82,13 @@ const closeSnackbar = () => {
   align-items: center;
   padding: 12px 16px;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px var(--color-card-shadow);
   animation: slideUp 0.3s ease-out;
   min-width: 280px;
   max-width: 500px;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 @keyframes slideUp {
@@ -121,25 +124,26 @@ const closeSnackbar = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--color-text);
 }
 
 .snackbar--success {
-  background-color: #4caf50;
+  background-color: var(--color-snackbar-success);
   color: white;
 }
 
 .snackbar--error {
-  background-color: #f44336;
+  background-color: var(--color-snackbar-error);
   color: white;
 }
 
 .snackbar--warning {
-  background-color: #ff9800;
+  background-color: var(--color-snackbar-warning);
   color: white;
 }
 
 .snackbar--info {
-  background-color: #2196f3;
+  background-color: var(--color-snackbar-info);
   color: white;
 }
 </style>

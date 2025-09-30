@@ -94,8 +94,9 @@ onMounted(() => {
 <style scoped>
 .card-side-editor {
   padding: 1rem;
-  background-color: #f0f0f0;
+  background-color: var(--color-background);
   border-radius: 6px;
+  color: var(--color-text);
 }
 
 .editor-section {
@@ -106,10 +107,11 @@ onMounted(() => {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: bold;
+  color: var(--color-text);
 }
 
 .editor-wrapper {
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -131,12 +133,20 @@ onMounted(() => {
 }
 
 .save-btn {
-  background-color: #1a936f;
+  background-color: var(--color-button-primary);
   color: white;
 }
 
+.save-btn:hover {
+  background-color: var(--color-button-primary-hover);
+}
+
 .cancel-btn {
-  background-color: #95a5a6;
+  background-color: var(--color-button-secondary);
   color: white;
+}
+
+.cancel-btn:hover {
+  background-color: var(--color-button-secondary-hover);
 }
 </style>

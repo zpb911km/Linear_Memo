@@ -108,15 +108,16 @@ const feedbackBarColor = computed(() => {
 .card-back {
   width: 100%;
   height: 400px;
-  background: white;
+  background: var(--color-card-background);
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px var(--color-card-shadow);
   padding: 24px;
   transition: transform 0.6s;
   transform-style: preserve-3d;
   position: relative;
   backface-visibility: hidden;
   margin-bottom: 20px;
+  border: 1px solid var(--color-border);
 }
 
 @media (max-width: 768px) {
@@ -163,6 +164,8 @@ const feedbackBarColor = computed(() => {
   word-wrap: break-word;
   white-space: pre-wrap;
   width: 100%;
+  color: var(--color-text);
+  font-size: larger;
 }
 
 .card-front-inner {
@@ -176,7 +179,7 @@ const feedbackBarColor = computed(() => {
 .feedback-container {
   width: 100%;
   height: 48px;
-  background: #f5f7fa;
+  background: var(--color-progress-background);
   border-radius: 24px;
   display: flex;
 }
@@ -184,14 +187,14 @@ const feedbackBarColor = computed(() => {
 .feedback-bar-container {
   width: 100%;
   height: 48px;
-  background: #f5f7fa;
+  background: var(--color-progress-background);
   border-radius: 24px;
   display: flex;
   align-items: center;
   cursor: pointer;
   margin-top: auto;
   margin-bottom: 16px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 2px 4px var(--color-card-shadow);
 }
 
 .feedback-bar {
@@ -214,5 +217,16 @@ const feedbackBarColor = computed(() => {
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 14px;
+}
+
+.btn-100 {
+  width: 50px;
+  background-color: var(--color-button-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: large;
 }
 </style>

@@ -1,0 +1,14 @@
+[Unit]
+Description=Linear Memo Web Backend Service
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/linear-memo
+Environment="FLASK_APP=app.py"
+Environment="FLASK_ENV=production"
+ExecStart=gunicorn --bind 0.0.0.0:65533 --workers 4 --reload app:app --timeout 60
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

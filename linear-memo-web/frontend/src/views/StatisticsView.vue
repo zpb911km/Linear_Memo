@@ -35,6 +35,8 @@
 <style scoped>
 .stats-page {
   padding: 2rem;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .stats-section {
@@ -42,10 +44,11 @@
 }
 
 .chart-placeholder {
-  border: 1px dashed #ccc;
+  border: 1px dashed var(--color-border);
   padding: 1rem;
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: var(--color-card-background);
+  box-shadow: 0 2px 4px var(--color-card-shadow);
 }
 
 .grid-placeholder {
@@ -57,7 +60,7 @@
 
 .grid-cell {
   aspect-ratio: 1;
-  background-color: #e0e0e0;
+  background-color: var(--color-border);
   border-radius: 2px;
 }
 
@@ -70,8 +73,9 @@
 
 .deck-stat-item {
   padding: 1rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: var(--color-card-background);
+  box-shadow: 0 2px 4px var(--color-card-shadow);
 }
 </style>

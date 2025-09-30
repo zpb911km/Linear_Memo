@@ -59,19 +59,19 @@ watch(
 .progress-bar {
   width: 100%;
   height: 3px;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--color-progress-background);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background-color: #3498db;
+  background-color: var(--color-progress-bar);
   transition: width 0.3s ease;
 }
 
 .progress-indeterminate {
   height: 100%;
-  background-color: #3498db;
+  background-color: var(--color-progress-bar);
   animation: indeterminateAnimation 1s infinite linear;
   transform-origin: 0% 50%;
 }

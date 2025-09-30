@@ -5,7 +5,7 @@ from random import randint
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, or_
 from typing import List
 
 
@@ -51,15 +51,26 @@ class Deck(db.Model):
         return len(cards)
 
     def count_overtime_cards(self) -> int:
-        cards: List[Card] = Card.query.filter_by(deck_id=self.id).all()
-        arrangement: Arrangement | None = Arrangement.query.filter_by(
-            deck_id=self.id
-        ).first()
+        current_time_stamp = datetime.now().timestamp()
+        
+        # 查询需要复习的卡片数量
+        needed_review_cards_length = (
+            Card.query
+            .filter_by(deck_id=self.id)
+            .filter(Card.last_review.isnot(None)) # type: ignore
+            .filter(
+                    or_(current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
+                    Card.review_interval < 1)
+            )
+            .count()
+        )
+        
+        arrangement = Arrangement.query.filter_by(deck_id=self.id).first()
         if arrangement is None:
             raise ValueError("Arrangement not found")
+        
         return min(
-            len([card for card in cards if card.is_needed_review()])
-            + arrangement.count,
+            needed_review_cards_length + arrangement.count,
             self.count_cards(),
         )
 
@@ -70,12 +81,18 @@ class Deck(db.Model):
         return arrangement.count
 
     def count_review_cards(self) -> int:
-        cards = Card.query.filter_by(deck_id=self.id).all()
-        return len([card for card in cards if not card.status])
+        # cards = Card.query.filter_by(deck_id=self.id).all()
+        # return len([card for card in cards if not card.status])
+        return Card.query.filter_by(deck_id=self.id).filter(
+            Card.last_review.isnot(None) # type: ignore
+        ).count()
 
     def count_remembered_cards(self) -> int:
-        cards = Card.query.filter_by(deck_id=self.id).all()
-        return len([card for card in cards if card.status])
+        # cards = Card.query.filter_by(deck_id=self.id).all()
+        # return len([card for card in cards if card.status])
+        return Card.query.filter_by(deck_id=self.id).filter(
+            Card.status.is_(True) # type: ignore
+        ).count()
 
 
 class Card(db.Model):
@@ -106,42 +123,42 @@ class Card(db.Model):
     def __repr__(self):
         return f"Card(id={self.id}, front={self.front}, back={self.back})"
 
-    def is_overtime(self) -> bool:
-        # 1. 处理last_review为None的情况（新卡片）
-        if self.last_review is None:
-            arrangement = Arrangement.query.filter_by(
-                deck_id=self.deck_id
-            ).first()
-            if arrangement is None:
-                raise ValueError("Arrangement not found")
-            if arrangement.count == 0:
-                return False
-            return True
+    # def is_overtime(self) -> bool:
+    #     # 1. 处理last_review为None的情况（新卡片）
+    #     if self.last_review is None:
+    #         arrangement = Arrangement.query.filter_by(
+    #             deck_id=self.deck_id
+    #         ).first()
+    #         if arrangement is None:
+    #             raise ValueError("Arrangement not found")
+    #         if arrangement.count == 0:
+    #             return False
+    #         return True
 
-        # 2. 检查是否未到复习时间
-        period = datetime.now() - self.last_review
-        if (
-            period.total_seconds() / 86400 < self.review_interval
-            and self.review_interval > 1  # 1天以下的卡片不算记得
-        ):
-            return False
+    #     # 2. 检查是否未到复习时间
+    #     period = datetime.now() - self.last_review
+    #     if (
+    #         period.total_seconds() / 86400 < self.review_interval
+    #         and self.review_interval > 1  # 1天以下的卡片不算记得
+    #     ):
+    #         return False
 
-        # 3. 其他情况都需要复习
-        return True
+    #     # 3. 其他情况都需要复习
+    #     return True
 
-    def is_needed_review(self) -> bool:
-        # 1. 处理last_review为None的情况（新卡片）
-        if self.last_review is None:
-            return False
-        # 2. 检查是否未到复习时间
-        period = datetime.now() - self.last_review
-        if (
-            period.total_seconds() / 86400 < self.review_interval
-            and self.review_interval > 1  # 1天以下的卡片不算记得
-        ):
-            return False
-        # 3. 其他情况都需要复习
-        return True
+    # def is_needed_review(self) -> bool:
+    #     # 1. 处理last_review为None的情况（新卡片）
+    #     if self.last_review is None:
+    #         return False
+    #     # 2. 检查是否未到复习时间
+    #     period = datetime.now() - self.last_review
+    #     if (
+    #         period.total_seconds() / 86400 < self.review_interval
+    #         and self.review_interval > 1  # 1天以下的卡片不算记得
+    #     ):
+    #         return False
+    #     # 3. 其他情况都需要复习
+    #     return True
 
     def overtime_days(self) -> float:
         if self.last_review is None:
@@ -507,17 +524,23 @@ def list_review_cards():
     列出待复习卡片，指定卡组id
     """
     deck_id = request.args.get("deck_id")
-    if deck_id is not None:
-        cards = (
-            Card.query.filter_by(deck_id=deck_id).filter_by(status=False).all()
-        )
-    else:
+    if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
+    current_time_stamp = func.strftime('%s', func.current_timestamp())
+    overtime_cards = (
+        Card.query
+            .filter_by(deck_id=deck_id)
+            .filter(Card.last_review.isnot(None)) # type: ignore
+            .filter(
+                    or_(current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
+                    Card.review_interval < 1)
+            )
+            .all()
+    )
     return jsonify(
         [
             {"id": card.id, "front": card.front, "back": card.back}
-            for card in cards
-            if card.is_overtime()
+            for card in overtime_cards
         ]
     )
 
@@ -562,22 +585,29 @@ def next_card():
     deck_id = request.args.get("deck_id")
     if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
-    deck = Deck.query.filter_by(id=deck_id).first()
+    deck: Deck | None = Deck.query.filter_by(id=deck_id).first()
     if deck is None:
         return jsonify({"error": "Deck not found"}), 404
-    cards: List[Card] = (
-        Card.query.filter_by(deck_id=deck_id).filter_by(status=False).all()
-    )
-    cards = list(
-        filter(
-            lambda c: c.is_overtime(),
-            cards,
+    arrangement: Arrangement | None = Arrangement.query.filter_by(deck_id=deck_id).first()
+    if arrangement is None:
+        return jsonify({"error": "Arrangement not found"}), 404
+    current_time_stamp = datetime.now().timestamp()
+    arrangement_count = arrangement.count
+    cards = (
+        Card.query
+        .filter_by(deck_id=deck_id)
+        .filter_by(status=False)
+        .filter(
+            or_(
+                current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
+                arrangement_count > 0,
+                Card.review_interval < 1
+            )
         )
-    )
-    cards.sort(
-        key=lambda c: c.overtime_days(),
-        reverse=True,
-    )
+        .order_by(
+            func.strftime('%s', Card.last_review) + Card.review_interval * 86400 - current_time_stamp
+        )
+    ).all()
     if len(cards) == 0:
         return jsonify({"message": "No cards to review"}), 204
     index = 1 if len(cards) > 1 else 0
@@ -668,6 +698,14 @@ def static_file(path):
 @app.route("/")
 def index():
     return send_from_directory(app.config["STATIC_FOLDER"], "index.html")
+
+@app.errorhandler(404)
+def handle_404(e):
+    return '''
+    <h1>404 Not Found</h1>
+    <p>The resource could not be found.</p>
+    <a href="/">Go back</a>
+    '''
 
 
 if __name__ == "__main__":

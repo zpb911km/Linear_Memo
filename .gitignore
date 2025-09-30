@@ -4,3 +4,4 @@ dist/
 linear-memo-web/backend/instance/current.NMF
 pull.sh
 db.prg
+__pycache__/

@@ -194,14 +194,15 @@ const closeDialog = () => {
 }
 
 .modal-content {
-  background-color: white;
+  background-color: var(--color-card-background);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--color-card-shadow);
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--color-border);
 }
 
 .modal-header {
@@ -209,12 +210,12 @@ const closeDialog = () => {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .modal-header h2 {
   margin: 0;
-  color: #333;
+  color: var(--color-text);
 }
 
 .close-btn {
@@ -222,7 +223,7 @@ const closeDialog = () => {
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #999;
+  color: var(--color-text-secondary);
   padding: 0;
   width: 30px;
   height: 30px;
@@ -232,7 +233,7 @@ const closeDialog = () => {
 }
 
 .close-btn:hover {
-  color: #666;
+  color: var(--color-text);
 }
 
 .modal-body {
@@ -252,17 +253,24 @@ const closeDialog = () => {
 .search-bar input {
   flex: 1;
   padding: 0.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 
 .search-bar button {
   padding: 0.5rem 1rem;
-  background-color: #3498db;
+  background-color: var(--color-button-primary);
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.search-bar button:hover {
+  background-color: var(--color-button-primary-hover);
 }
 
 .card-list {
@@ -271,18 +279,19 @@ const closeDialog = () => {
 
 .card-item {
   margin-bottom: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   overflow: hidden;
+  background-color: var(--color-card-background);
 }
 
 .card-item.editing {
-  border-color: #3498db;
+  border-color: var(--color-button-primary);
 }
 
 .card-view-mode {
   padding: 0.5rem;
-  background-color: white;
+  background-color: var(--color-card-background);
 }
 
 .card-preview {
@@ -295,8 +304,9 @@ const closeDialog = () => {
 .card-front-preview,
 .card-back-preview {
   padding: 0.5rem;
-  border: 1px dashed #ccc;
+  border: 1px dashed var(--color-border);
   border-radius: 4px;
+  color: var(--color-text);
 }
 
 .card-actions {
@@ -310,7 +320,7 @@ const closeDialog = () => {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 1.5rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
 }
 
 .edit-btn,
@@ -322,23 +332,35 @@ const closeDialog = () => {
 }
 
 .edit-btn {
-  background-color: #4ecdc4;
+  background-color: var(--color-button-secondary);
   color: white;
 }
 
+.edit-btn:hover {
+  background-color: var(--color-button-secondary-hover);
+}
+
 .delete-btn {
-  background-color: #ff6b6b;
+  background-color: var(--color-button-danger);
   color: white;
+}
+
+.delete-btn:hover {
+  background-color: var(--color-button-danger-hover);
 }
 
 .add-card-btn {
   padding: 0.5rem 0.5rem;
-  background-color: #3498db;
+  background-color: var(--color-button-primary);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+}
+
+.add-card-btn:hover {
+  background-color: var(--color-button-primary-hover);
 }
 
 .save-cancel-actions {
@@ -356,12 +378,20 @@ const closeDialog = () => {
 }
 
 .save-btn {
-  background-color: #1a936f;
+  background-color: var(--color-button-primary);
   color: white;
 }
 
+.save-btn:hover {
+  background-color: var(--color-button-primary-hover);
+}
+
 .cancel-btn {
-  background-color: #95a5a6;
+  background-color: var(--color-button-secondary);
   color: white;
+}
+
+.cancel-btn:hover {
+  background-color: var(--color-button-secondary-hover);
 }
 </style>
