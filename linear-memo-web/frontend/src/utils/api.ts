@@ -63,7 +63,6 @@ async function callApiWithFeedback<T>(
     if (successMessage) {
       notificationStore.showSuccess(successMessage)
     }
-
     return response.data
   } catch (error: any) {
     // 隐藏进度条
@@ -193,7 +192,10 @@ async function reviewCard(cardId: number, feedback: number): Promise<any> {
 // 复习和下一次卡片整合
 async function reviewAndNextCard(deckId: number, cardId: number, feedback: number) {
   return callApiWithFeedback(
-    () => httpClient.post<any>(`/review_and_next_card?deck_id=${deckId}&card_id=${cardId}&feedback=${feedback}`),
+    () =>
+      httpClient.post<any>(
+        `/review_and_next_card?deck_id=${deckId}&card_id=${cardId}&feedback=${feedback}`,
+      ),
     '复习反馈处理成功',
     '处理复习反馈失败',
   ) as Promise<NextCardInfo>

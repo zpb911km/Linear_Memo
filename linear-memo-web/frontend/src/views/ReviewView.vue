@@ -21,19 +21,27 @@ const current_overtime = ref(0.1)
 
 const progress = computed(() => {
   if (!currentDeck.value || !currentCard.value) return 0
-  console.log(current_overtime.value, total_overtime.value)
-  return ((total_overtime.value -current_overtime.value) / total_overtime.value) * 100
+  return ((total_overtime.value - current_overtime.value) / total_overtime.value) * 100
 })
 
 const handleReview = async (feedback: number) => {
   isLoading.value = true
   try {
-    const next_card_info = await reviewAndNextCard(currentDeck.value!.id, currentCard.value!.id, feedback)
+    const next_card_info = await reviewAndNextCard(
+      currentDeck.value!.id,
+      currentCard.value!.id,
+      feedback,
+    )
+    if (next_card_info === null) {
+      router.push('/')
+      return
+    }
+    if (next_card_info.overtime_count < 0.1) {
+      router.push('/')
+      return
+    }
     current_overtime.value = next_card_info.overtime_count
     currentCard.value = next_card_info.card
-    if (!currentCard.value) {
-      router.push('/')
-    }
   } finally {
     isLoading.value = false
   }
@@ -48,6 +56,11 @@ onMounted(() => {
     .then(([deck, card]) => {
       currentDeck.value = deck
       total_overtime.value = deck.overtime_count
+      console.log(deck.overtime_count)
+      if (deck.overtime_count < 0.1) {
+        router.push('/')
+        return
+      }
       current_overtime.value = deck.overtime_count
       currentCard.value = card
       if (!currentCard.value) {
@@ -125,7 +138,11 @@ onMounted(() => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(to right, var(--color-button-primary), var(--color-button-primary-hover));
+  background: linear-gradient(
+    to right,
+    var(--color-button-primary),
+    var(--color-button-primary-hover)
+  );
   transition: width 0.3s ease;
 }
 

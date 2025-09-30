@@ -1,87 +1,57 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-// Toast UI Editor
-import Editor from '@toast-ui/editor'
-import '@toast-ui/editor/dist/toastui-editor.css'
-
 interface Props {
   index: number
   front: string
   back: string
 }
-
 const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'save', index: number, front: string, back: string): void
   (e: 'cancel'): void
 }>()
+// 编辑器状态
+const frontRaw = ref(props.front || '')
 
-// 编辑器实例
-let frontEditor: Editor | null = null
-let backEditor: Editor | null = null
+const backRaw = ref(props.back || '')
 
 // 保存
 const save = () => {
-  const frontContent = frontEditor?.getHTML() || ''
-  const backContent = backEditor?.getHTML() || ''
-  emit('save', props.index, frontContent, backContent)
+  emit('save', props.index, frontRaw.value, backRaw.value)
 }
-
 // 取消
 const cancel = () => {
   emit('cancel')
 }
-
-// 初始化编辑器
-onMounted(() => {
-  // 初始化正面编辑器
-  const frontEl = document.getElementById('front-editor')
-  if (frontEl) {
-    frontEditor = new Editor({
-      el: frontEl,
-      height: '200px',
-      initialEditType: 'wysiwyg',
-      initialValue: props.front || '',
-      toolbarItems: [
-        ['heading', 'bold', 'italic', 'strike'],
-        ['hr', 'quote'],
-        ['ul', 'ol', 'task', 'indent', 'outdent'],
-        ['table', 'link'],
-        ['code', 'codeblock'],
-      ],
-    })
-  }
-
-  // 初始化反面编辑器
-  const backEl = document.getElementById('back-editor')
-  if (backEl) {
-    backEditor = new Editor({
-      el: backEl,
-      height: '200px',
-      initialEditType: 'wysiwyg',
-      initialValue: props.back || '',
-      toolbarItems: [
-        ['heading', 'bold', 'italic', 'strike'],
-        ['hr', 'quote'],
-        ['ul', 'ol', 'task', 'indent', 'outdent'],
-        ['table', 'link'],
-        ['code', 'codeblock'],
-      ],
-    })
-  }
-})
 </script>
-
 <template>
   <div class="card-side-editor">
-    <div class="editor-section">
-      <label>正面内容:</label>
-      <div id="front-editor" class="editor-wrapper"></div>
-    </div>
+    <div class="editor-grid">
+      <!-- 正面编辑器 -->
+      <div class="editor-section">
+        <label>正面原始文本:</label>
+        <textarea
+          v-model="frontRaw"
+          class="editor-wrapper raw-editor"
+          placeholder="输入正面内容..."
+        >
+        </textarea>
+      </div>
+      <div class="editor-section">
+        <label>正面预览:</label>
+        <div class="editor-wrapper html-preview" v-html="frontRaw"></div>
+      </div>
 
-    <div class="editor-section">
-      <label>反面内容:</label>
-      <div id="back-editor" class="editor-wrapper"></div>
+      <!-- 反面编辑器 -->
+      <div class="editor-section">
+        <label>反面原始文本:</label>
+        <textarea v-model="backRaw" class="editor-wrapper raw-editor" placeholder="输入反面内容...">
+        </textarea>
+      </div>
+      <div class="editor-section">
+        <label>反面预览:</label>
+        <div class="editor-wrapper html-preview" v-html="backRaw"></div>
+      </div>
     </div>
 
     <div class="editor-actions">
@@ -92,37 +62,49 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.raw-editor {
+  width: 100%;
+  font-family: monospace;
+  resize: vertical;
+}
+.html-preview {
+  width: 100%;
+  overflow: auto;
+}
+</style>
+<style scoped>
 .card-side-editor {
   padding: 1rem;
   background-color: var(--color-background);
   border-radius: 6px;
   color: var(--color-text);
 }
-
 .editor-section {
   margin-bottom: 1rem;
 }
-
 .editor-section label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: bold;
   color: var(--color-text);
 }
-
 .editor-wrapper {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   overflow: hidden;
+  min-height: 200px;
 }
-
 .editor-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
 }
-
 .save-btn,
 .cancel-btn {
   padding: 0.5rem 1rem;
@@ -131,21 +113,17 @@ onMounted(() => {
   cursor: pointer;
   font-weight: bold;
 }
-
 .save-btn {
   background-color: var(--color-button-primary);
   color: white;
 }
-
 .save-btn:hover {
   background-color: var(--color-button-primary-hover);
 }
-
 .cancel-btn {
   background-color: var(--color-button-secondary);
   color: white;
 }
-
 .cancel-btn:hover {
   background-color: var(--color-button-secondary-hover);
 }

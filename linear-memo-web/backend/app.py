@@ -52,47 +52,58 @@ class Deck(db.Model):
 
     def count_overtime_cards(self) -> int:
         current_time_stamp = datetime.now().timestamp()
-        
+
         # 查询需要复习的卡片数量
         needed_review_cards_length = (
-            Card.query
-            .filter_by(deck_id=self.id)
-            .filter(Card.last_review.isnot(None)) # type: ignore
+            Card.query.filter_by(deck_id=self.id)
+            .filter(Card.last_review.isnot(None))  # type: ignore
+            .filter(Card.status.is_(False))  # type: ignore
             .filter(
-                    or_(current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
-                    Card.review_interval < 1) # type: ignore
+                or_(
+                    current_time_stamp
+                    > func.strftime("%s", Card.last_review)
+                    + Card.review_interval * 86400,
+                    Card.review_interval < 1,  # type: ignore
+                )
             )
             .count()
         )
-        
-        arrangement = Arrangement.query.filter_by(deck_id=self.id).first()
-        if arrangement is None:
-            raise ValueError("Arrangement not found")
-        
+
         return min(
-            needed_review_cards_length + arrangement.count,
+            needed_review_cards_length + self.count_new_cards(),
             self.count_cards(),
         )
 
     def count_new_cards(self) -> int:
         arrangement = Arrangement.query.filter_by(deck_id=self.id).first()
+        not_reviewed_cards_count = (
+            Card.query.filter_by(deck_id=self.id)
+            .filter(Card.last_review.is_(None))  # type: ignore
+            .filter(Card.status.is_(False))  # type: ignore
+            .count()
+        )
         if arrangement is None:
             raise ValueError("Arrangement not found")
-        return arrangement.count
+        return min(not_reviewed_cards_count, arrangement.count)
 
     def count_review_cards(self) -> int:
         # cards = Card.query.filter_by(deck_id=self.id).all()
         # return len([card for card in cards if not card.status])
-        return Card.query.filter_by(deck_id=self.id).filter(
-            Card.last_review.isnot(None) # type: ignore
-        ).count()
+        return (
+            Card.query.filter_by(deck_id=self.id)
+            .filter(Card.last_review.isnot(None))  # type: ignore
+            .filter(Card.status.is_(False))  # type: ignore
+            .count()
+        )
 
     def count_remembered_cards(self) -> int:
         # cards = Card.query.filter_by(deck_id=self.id).all()
         # return len([card for card in cards if card.status])
-        return Card.query.filter_by(deck_id=self.id).filter(
-            Card.status.is_(True) # type: ignore
-        ).count()
+        return (
+            Card.query.filter_by(deck_id=self.id)
+            .filter(Card.status.is_(True))  # type: ignore
+            .count()
+        )
 
 
 class Card(db.Model):
@@ -152,6 +163,9 @@ class Card(db.Model):
         # 处理边界情况
         if abs(feedback - 100) < 1e-10:
             self.status = True  # 永久记忆状态
+            self.last_review = datetime.now()
+            db.session.commit()
+            return
 
         if abs(feedback - 0) < 1e-10:
             # 重置卡片状态
@@ -170,11 +184,7 @@ class Card(db.Model):
 
         # 核心计算
         stability = omega * feedback + (1 - omega) * self.stability * 100
-        delta = (
-            self.review_interval
-            * log(forget_line + bias)
-            / log(stability / 100)
-        )
+        delta = self.review_interval * log(forget_line + bias) / log(stability / 100)
 
         # 处理间隔限制
         if delta > max_delta:
@@ -199,9 +209,7 @@ class Card(db.Model):
 
         # 判断是否为新卡片
         if self.last_review is None:
-            arrangement = Arrangement.query.filter_by(
-                deck_id=self.deck_id
-            ).first()
+            arrangement = Arrangement.query.filter_by(deck_id=self.deck_id).first()
             if arrangement is None:
                 raise ValueError("Arrangement not found")
             arrangement.count -= 1  # 已经学习了1个新卡片
@@ -264,7 +272,7 @@ def create_deck():
     if not request.json:
         return jsonify({"error": "Invalid request"}), 400
     name = request.json.get("name")
-    max_deck_id = Deck.query.order_by(Deck.id.desc()).first().id   # type: ignore
+    max_deck_id = Deck.query.order_by(Deck.id.desc()).first().id  # type: ignore
     new_deck_id = max_deck_id + 1
     new_deck = Deck(id=new_deck_id, name=name)
     new_arrangement = Arrangement(deck_id=new_deck_id, count=10)
@@ -309,9 +317,7 @@ def edit_deck(deck_id: int):
         deck.max_delta = max_delta
     arrangement = request.json.get("arrangement")
     if arrangement is not None:
-        current_arrangement = Arrangement.query.filter_by(
-            deck_id=deck_id
-        ).first()
+        current_arrangement = Arrangement.query.filter_by(deck_id=deck_id).first()
         if current_arrangement is None:
             return jsonify({"error": "Arrangement not found"}), 404
         current_arrangement.count = arrangement
@@ -351,7 +357,7 @@ def list_decks():
 # 5. 卡组详情
 @app.route("/api/decks/<int:deck_id>", methods=["GET"])
 def get_deck(deck_id: int):
-    deck = Deck.query.filter_by(id=deck_id).first()
+    deck: Deck | None = Deck.query.filter_by(id=deck_id).first()
     if deck is None:
         return jsonify({"error": "Deck not found"}), 404
     return jsonify(
@@ -362,9 +368,7 @@ def get_deck(deck_id: int):
             "omega": deck.omega,
             "max_delta": deck.max_delta,
             "cards_count": deck.count_cards(),
-            "new_count": min(
-                deck.count_new_cards(), deck.count_overtime_cards()
-            ),
+            "new_count": min(deck.count_new_cards(), deck.count_overtime_cards()),
             "overtime_count": deck.count_overtime_cards(),
             "review_count": deck.count_review_cards(),
             "remembered_count": deck.count_remembered_cards(),
@@ -443,10 +447,7 @@ def list_cards():
     else:
         return jsonify({"error": "deck_id is required"}), 400
     return jsonify(
-        [
-            {"id": card.id, "front": card.front, "back": card.back}
-            for card in cards
-        ]
+        [{"id": card.id, "front": card.front, "back": card.back} for card in cards]
     )
 
 
@@ -489,16 +490,18 @@ def list_review_cards():
     deck_id = request.args.get("deck_id")
     if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
-    current_time_stamp = func.strftime('%s', func.current_timestamp())
+    current_time_stamp = func.strftime("%s", func.current_timestamp())
     overtime_cards = (
-        Card.query
-            .filter_by(deck_id=deck_id)
-            .filter(Card.last_review.isnot(None)) # type: ignore
-            .filter(
-                    or_(current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
-                    Card.review_interval < 1) # type: ignore
+        Card.query.filter_by(deck_id=deck_id)
+        .filter(Card.last_review.isnot(None))  # type: ignore
+        .filter(
+            or_(
+                current_time_stamp
+                > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
+                Card.review_interval < 1,  # type: ignore
             )
-            .all()
+        )
+        .all()
     )
     return jsonify(
         [
@@ -532,10 +535,7 @@ def search_cards():
         .all()
     )
     return jsonify(
-        [
-            {"id": card.id, "front": card.front, "back": card.back}
-            for card in cards
-        ]
+        [{"id": card.id, "front": card.front, "back": card.back} for card in cards]
     )
 
 
@@ -551,26 +551,31 @@ def next_card():
     deck: Deck | None = Deck.query.filter_by(id=deck_id).first()
     if deck is None:
         return jsonify({"error": "Deck not found"}), 404
-    arrangement: Arrangement | None = Arrangement.query.filter_by(deck_id=deck_id).first()
+    arrangement: Arrangement | None = Arrangement.query.filter_by(
+        deck_id=deck_id
+    ).first()
     if arrangement is None:
         return jsonify({"error": "Arrangement not found"}), 404
     current_time_stamp = datetime.now().timestamp()
     arrangement_count = arrangement.count
     cards = (
-        Card.query
-        .filter_by(deck_id=deck_id)
+        Card.query.filter_by(deck_id=deck_id)
         .filter_by(status=False)
         .filter(
             or_(
-                current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
+                current_time_stamp
+                > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
                 arrangement_count > 0,
-                Card.review_interval < 1 # type: ignore
+                Card.review_interval < 1,  # type: ignore
             )
         )
         .order_by(
-            func.strftime('%s', Card.last_review) + Card.review_interval * 86400 - current_time_stamp
+            func.strftime("%s", Card.last_review)
+            + Card.review_interval * 86400
+            - current_time_stamp
         )
     ).all()
+    print(cards)
     if len(cards) == 0:
         return jsonify({"message": "No cards to review"}), 204
     index = 1 if len(cards) > 1 else 0
@@ -583,8 +588,9 @@ def next_card():
         }
     )
 
+
 # 9. 整合
-@app.route("/api/review_and_next_card", methods=["GET"])
+@app.route("/api/review_and_next_card", methods=["POST"])
 def review_and_next_card():
     """
     复习卡片并返回当前最需要复习的卡片，指定卡组id
@@ -617,24 +623,26 @@ def review_and_next_card():
     current_time_stamp = datetime.now().timestamp()
     arrangement_count = arrangement.count
     cards: List[Card] = (
-        Card.query
-        .filter_by(deck_id=deck_id)
+        Card.query.filter_by(deck_id=deck_id)
         .filter_by(status=False)
         .filter(
             or_(
-                current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
+                current_time_stamp
+                > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
                 arrangement_count > 0,
-                Card.review_interval < 1 # type: ignore
+                Card.review_interval < 1,  # type: ignore
             )
         )
         .order_by(
-            func.strftime('%s', Card.last_review) + Card.review_interval * 86400 - current_time_stamp
+            func.strftime("%s", Card.last_review)
+            + Card.review_interval * 86400
+            - current_time_stamp
         )
     ).all()
     if len(cards) == 0:
         return jsonify({"message": "No cards to review"}), 204
     for c in cards:
-        if c.id != card_id:
+        if c.id != int(card_id):
             card = c
             break
     else:
@@ -654,6 +662,7 @@ def review_and_next_card():
             "overtime_count": overtime_count,
         }
     )
+
 
 # 安排管理
 # 1. 创建安排
@@ -715,7 +724,9 @@ def delete_arrangement(arrangement_id: int):
 def list_arrangements():
     deck_id = request.args.get("deck_id")
     if deck_id is not None:
-        arrangement: Arrangement | None = Arrangement.query.filter_by(deck_id=deck_id).first()
+        arrangement: Arrangement | None = Arrangement.query.filter_by(
+            deck_id=deck_id
+        ).first()
     else:
         return jsonify({"error": "deck_id is required"}), 400
     if arrangement is None:
@@ -733,13 +744,14 @@ def static_file(path):
 def index():
     return send_from_directory(app.config["STATIC_FOLDER"], "index.html")
 
+
 @app.errorhandler(404)
 def handle_404(e):
-    return '''
+    return """
     <h1>404 Not Found</h1>
     <p>The resource could not be found.</p>
     <a href="/">Go back</a>
-    '''
+    """
 
 
 if __name__ == "__main__":

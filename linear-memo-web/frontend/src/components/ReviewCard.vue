@@ -12,7 +12,11 @@ let isDragging = ref(false)
 const feedbackHandler = (e: MouseEvent | TouchEvent) => {
   if (isDragging.value) return
   // 检查事件类型，确保只在鼠标释放或触摸结束时触发
-  if ((e instanceof MouseEvent && e.type !== 'mouseup') || (e instanceof TouchEvent && e.type !== 'touchend')) return
+  if (
+    (e instanceof MouseEvent && e.type !== 'mouseup') ||
+    (e instanceof TouchEvent && e.type !== 'touchend')
+  )
+    return
   fliped.value = false
   isDragging.value = false
   emit('review', feedback.value)
@@ -36,11 +40,11 @@ const draggingHandler = (e: MouseEvent | TouchEvent) => {
   const rect = target.getBoundingClientRect()
 
   // 获取触摸点或鼠标点的 x 坐标
-  let clientX: number;
+  let clientX: number
   if (e instanceof TouchEvent) {
-    clientX = e.touches[0].clientX; // 获取第一个触摸点的 clientX
+    clientX = e.touches[0].clientX // 获取第一个触摸点的 clientX
   } else {
-    clientX = e.clientX;
+    clientX = e.clientX
   }
 
   const x = clientX - rect.left
@@ -53,7 +57,7 @@ const startDragging = (e: MouseEvent | TouchEvent) => {
   isDragging.value = true
   // 阻止默认行为，防止页面滚动
   if (e instanceof TouchEvent) {
-    e.preventDefault();
+    e.preventDefault()
   }
 }
 
@@ -67,7 +71,6 @@ const feedbackBarColor = computed(() => {
   const green = Math.round(255 * (feedback.value / 100))
   return `linear-gradient(to right, rgb(${red}, 0, ${green}), rgb(${red}, ${green}, 50))`
 })
-
 </script>
 <template>
   <div class="review-card" :class="{ flipped: fliped }">
@@ -86,7 +89,10 @@ const feedbackBarColor = computed(() => {
           @touchend="stopDragging"
           @touchmove="draggingHandler"
         >
-          <div class="feedback-bar" :style="{ width: `${feedback}%`, background: feedbackBarColor }">
+          <div
+            class="feedback-bar"
+            :style="{ width: `${feedback}%`, background: feedbackBarColor }"
+          >
             <div class="feedback-value">{{ feedback.toFixed(0) }}</div>
           </div>
         </div>

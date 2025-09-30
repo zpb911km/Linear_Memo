@@ -4,18 +4,18 @@
   --color-text: #f0f0f0;
   --color-text-secondary: #bbbbbb;
   --color-border: #444444;
-  
+
   /* 导航栏颜色 */
   --color-navbar-background: #435f7b;
   --color-navbar-text: #ecf0f1;
   --color-navbar-hover: rgba(255, 255, 255, 0.1);
   --color-navbar-active: #3498db;
-  
+
   /* 卡片颜色 */
   --color-card-background: #2d2d2d;
   --color-card-border: #444444;
   --color-card-shadow: rgba(0, 0, 0, 0.3);
-  
+
   /* 按钮颜色 */
   --color-button-primary: #5ac180;
   --color-button-primary-hover: #459261;
@@ -23,11 +23,11 @@
   --color-button-secondary-hover: #2980b9;
   --color-button-danger: #e74c3c;
   --color-button-danger-hover: #c0392b;
-  
+
   /* 进度条颜色 */
   --color-progress-bar: #3498db;
   --color-progress-background: #444444;
-  
+
   /* 提示框颜色 */
   --color-snackbar-success: #27ae60;
   --color-snackbar-error: #e74c3c;

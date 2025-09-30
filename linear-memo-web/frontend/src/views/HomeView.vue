@@ -23,22 +23,24 @@ onMounted(async () => {
 
 const clock = setInterval(() => {
   // 定时刷新牌堆列表
-  fetchDecks().then(response => {
-    if (response) {
-      for (const deck of response) {
-        fetchDeckDetail(deck.id).then(detail => {
-          const index = deckDetails.value.findIndex(d => d.id === detail.id)
-          if (index !== -1) {
-            deckDetails.value.splice(index, 1, detail)
-          } else {
-            deckDetails.value.push(detail)
-          }
-        })
+  fetchDecks()
+    .then((response) => {
+      if (response) {
+        for (const deck of response) {
+          fetchDeckDetail(deck.id).then((detail) => {
+            const index = deckDetails.value.findIndex((d) => d.id === detail.id)
+            if (index !== -1) {
+              deckDetails.value.splice(index, 1, detail)
+            } else {
+              deckDetails.value.push(detail)
+            }
+          })
+        }
       }
-    }
-  }).catch(error => {
-    console.error('获取牌堆列表时出错：', error)
-  })
+    })
+    .catch((error) => {
+      console.error('获取牌堆列表时出错：', error)
+    })
 }, 60 * 1000) // 每 1 分钟刷新一次牌堆列表
 
 onUnmounted(() => {
@@ -48,7 +50,6 @@ onUnmounted(() => {
 
 <template>
   <div class="home-view">
-
     <div class="decks-list">
       <!-- 遍历每个牌堆详细信息，并使用其 id 作为唯一的键 -->
       <div v-for="deckDetail in deckDetails" :key="deckDetail.id" class="deck-item">
@@ -62,7 +63,9 @@ onUnmounted(() => {
             <li>记住数量: {{ deckDetail.remembered_count }}</li>
           </ul>
         </div>
-        <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link">复习</router-link>
+        <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link"
+          >复习</router-link
+        >
       </div>
     </div>
   </div>
