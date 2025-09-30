@@ -60,7 +60,7 @@ class Deck(db.Model):
             .filter(Card.last_review.isnot(None)) # type: ignore
             .filter(
                     or_(current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
-                    Card.review_interval < 1)
+                    Card.review_interval < 1) # type: ignore
             )
             .count()
         )
@@ -122,43 +122,6 @@ class Card(db.Model):
 
     def __repr__(self):
         return f"Card(id={self.id}, front={self.front}, back={self.back})"
-
-    # def is_overtime(self) -> bool:
-    #     # 1. 处理last_review为None的情况（新卡片）
-    #     if self.last_review is None:
-    #         arrangement = Arrangement.query.filter_by(
-    #             deck_id=self.deck_id
-    #         ).first()
-    #         if arrangement is None:
-    #             raise ValueError("Arrangement not found")
-    #         if arrangement.count == 0:
-    #             return False
-    #         return True
-
-    #     # 2. 检查是否未到复习时间
-    #     period = datetime.now() - self.last_review
-    #     if (
-    #         period.total_seconds() / 86400 < self.review_interval
-    #         and self.review_interval > 1  # 1天以下的卡片不算记得
-    #     ):
-    #         return False
-
-    #     # 3. 其他情况都需要复习
-    #     return True
-
-    # def is_needed_review(self) -> bool:
-    #     # 1. 处理last_review为None的情况（新卡片）
-    #     if self.last_review is None:
-    #         return False
-    #     # 2. 检查是否未到复习时间
-    #     period = datetime.now() - self.last_review
-    #     if (
-    #         period.total_seconds() / 86400 < self.review_interval
-    #         and self.review_interval > 1  # 1天以下的卡片不算记得
-    #     ):
-    #         return False
-    #     # 3. 其他情况都需要复习
-    #     return True
 
     def overtime_days(self) -> float:
         if self.last_review is None:
@@ -533,7 +496,7 @@ def list_review_cards():
             .filter(Card.last_review.isnot(None)) # type: ignore
             .filter(
                     or_(current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
-                    Card.review_interval < 1)
+                    Card.review_interval < 1) # type: ignore
             )
             .all()
     )
@@ -601,7 +564,7 @@ def next_card():
             or_(
                 current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
                 arrangement_count > 0,
-                Card.review_interval < 1
+                Card.review_interval < 1 # type: ignore
             )
         )
         .order_by(
@@ -620,6 +583,77 @@ def next_card():
         }
     )
 
+# 9. 整合
+@app.route("/api/review_and_next_card", methods=["GET"])
+def review_and_next_card():
+    """
+    复习卡片并返回当前最需要复习的卡片，指定卡组id
+    """
+    deck_id = request.args.get("deck_id")
+    card_id = request.args.get("card_id")
+    feedback = request.args.get("feedback")
+    if deck_id is None or card_id is None or feedback is None:
+        return jsonify({"error": "deck_id, card_id and feedback are required"}), 400
+    deck: Deck | None = Deck.query.filter_by(id=deck_id).first()
+    if deck is None:
+        return jsonify({"error": "Deck not found"}), 404
+    card: Card | None = Card.query.filter_by(id=card_id).first()
+    if card is None:
+        return jsonify({"error": "Card not found"}), 404
+    feedback = float(feedback)
+    if feedback < 0 or feedback > 100:
+        return jsonify({"error": "feedback should be in [0, 100]"}), 400
+    arrangement = Arrangement.query.filter_by(deck_id=deck_id).first()
+    if arrangement is None:
+        return jsonify({"error": "Arrangement not found"}), 404
+    try:
+        card.review(feedback)
+    except ValueError as e:
+        return (
+            jsonify({"error": "Error occurred when reviewing card: " + str(e)}),
+            400,
+        )
+    overtime_count = deck.count_overtime_cards()
+    current_time_stamp = datetime.now().timestamp()
+    arrangement_count = arrangement.count
+    cards: List[Card] = (
+        Card.query
+        .filter_by(deck_id=deck_id)
+        .filter_by(status=False)
+        .filter(
+            or_(
+                current_time_stamp > func.strftime('%s', Card.last_review) + Card.review_interval * 86400,
+                arrangement_count > 0,
+                Card.review_interval < 1 # type: ignore
+            )
+        )
+        .order_by(
+            func.strftime('%s', Card.last_review) + Card.review_interval * 86400 - current_time_stamp
+        )
+    ).all()
+    if len(cards) == 0:
+        return jsonify({"message": "No cards to review"}), 204
+    for c in cards:
+        if c.id != card_id:
+            card = c
+            break
+    else:
+        return jsonify({"message": "No cards to review"}), 204
+    return jsonify(
+        {
+            "card": {
+                "id": card.id,
+                "deck_id": card.deck_id,
+                "front": card.front,
+                "back": card.back,
+                # "last_review": card.last_review,
+                # "stability": card.stability,
+                # "review_interval": card.review_interval,
+                # "status": card.status,
+            },
+            "overtime_count": overtime_count,
+        }
+    )
 
 # 安排管理
 # 1. 创建安排

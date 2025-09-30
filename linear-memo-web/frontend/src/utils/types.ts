@@ -38,4 +38,9 @@ interface History {
   stability: number
 }
 
-export type { Deck, DeckDetail, Card, Arrangement, History }
+interface NextCardInfo {
+  card: Card
+  overtime_count: number
+}
+
+export type { Deck, DeckDetail, Card, Arrangement, History, NextCardInfo }

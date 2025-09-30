@@ -4,6 +4,7 @@ import {
   fetchDeckDetail,
   fetchNextCard,
   fetchReviewCards,
+  reviewAndNextCard,
   reviewCard,
 } from '@/utils/api'
 import type { Card, Deck } from '@/utils/types'
@@ -27,9 +28,9 @@ const progress = computed(() => {
 const handleReview = async (feedback: number) => {
   isLoading.value = true
   try {
-    await reviewCard(currentCard.value!.id, feedback)
-    current_overtime.value = (await fetchDeckDetail(currentDeck.value!.id)).overtime_count
-    currentCard.value = await fetchNextCard(currentDeck.value!.id)
+    const next_card_info = await reviewAndNextCard(currentDeck.value!.id, currentCard.value!.id, feedback)
+    current_overtime.value = next_card_info.overtime_count
+    currentCard.value = next_card_info.card
     if (!currentCard.value) {
       router.push('/')
     }

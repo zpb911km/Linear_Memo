@@ -1,7 +1,7 @@
 // API交互模块
 import { httpClient, type ApiResponse } from './httpClient'
 import { useNotificationStore } from '../stores/notificationStore'
-import type { Card, Deck, Arrangement, DeckDetail } from './types'
+import type { Card, Deck, Arrangement, DeckDetail, NextCardInfo } from './types'
 
 // API状态类型
 interface ApiState<T> {
@@ -190,6 +190,15 @@ async function reviewCard(cardId: number, feedback: number): Promise<any> {
   ) as Promise<any>
 }
 
+// 复习和下一次卡片整合
+async function reviewAndNextCard(deckId: number, cardId: number, feedback: number) {
+  return callApiWithFeedback(
+    () => httpClient.post<any>(`/review_and_next_card?deck_id=${deckId}&card_id=${cardId}&feedback=${feedback}`),
+    '复习反馈处理成功',
+    '处理复习反馈失败',
+  ) as Promise<NextCardInfo>
+}
+
 // 搜索卡片
 async function searchCards(deckId: number, keyword: string): Promise<Card[]> {
   return callApiWithFeedback(
@@ -257,6 +266,7 @@ export {
   reviewCard,
   searchCards,
   fetchNextCard,
+  reviewAndNextCard,
   // 安排管理
   createArrangement,
   updateArrangement,

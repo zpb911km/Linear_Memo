@@ -1,7 +1,6 @@
 # Linear_Memo
 A tool may assist your memory
 Build with Flask and Vue.js
-UI: Quasar Framework
 
 ## 介绍
 
@@ -14,7 +13,6 @@ Linear_Memo是一个基于Flask和Vue.js的跨平台桌面和移动应用，旨�
 - 仿照Anki的记忆卡片,同时加入了复习次数和复习时刻的显示
   - 复习次数：已经复习的次数
   - 复习时刻：下一次复习的具体时间
-- 记忆卡片的颜色会随着复习次数的增加而逐渐变浅，以提醒用户及时复习
 - 完整移植TUI_fully.py的背单词功能和线性反馈算法
 
 ### 卡组管理界面
@@ -54,7 +52,7 @@ Linear_Memo是一个基于Flask和Vue.js的跨平台桌面和移动应用，旨�
 
 ### 环境搭建
 1. 安装Flask开发环境
-2. 配置Vue.js和Quasar框架
+2. 配置Vue.js框架
 3. 设置SQLite数据库环境
 
 ### 核心功能实现
