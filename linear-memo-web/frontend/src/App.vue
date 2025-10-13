@@ -4,13 +4,21 @@ import { useNotificationStore } from './stores/notificationStore'
 import { useThemeStore } from './stores/themeStore'
 import Snackbar from './components/Snackbar.vue'
 import ProgressBar from './components/ProgressBar.vue'
+import { useAuthStore } from './stores/authStore'
+import { onMounted } from 'vue'
 
 const notificationStore = useNotificationStore()
 const themeStore = useThemeStore()
+const authStore = useAuthStore()
 
 const toggleTheme = () => {
   themeStore.toggleTheme()
 }
+
+onMounted(() => {
+  // 初始化认证状态
+  authStore.initializeAuth()
+})
 </script>
 
 <template>

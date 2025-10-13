@@ -8,6 +8,17 @@ class HttpClient {
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     }
+    
+    // 如果有保存的认证令牌，自动添加到默认头部
+    const token = localStorage.getItem('authToken')
+    if (token) {
+      this.defaultHeaders['Authorization'] = `Bearer ${token}`
+    }
+  }
+
+  // 获取默认请求头的副本
+  get headers(): Record<string, string> {
+    return { ...this.defaultHeaders }
   }
 
   // 设置默认请求头
@@ -102,11 +113,14 @@ class HttpClient {
 
   // DELETE请求
   async delete<T>(endpoint: string, headers?: Record<string, string>): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'DELETE', headers })
+    return this.request<T>(endpoint, {
+      method: 'DELETE',
+      headers,
+    })
   }
 }
 
-// HTTP错误类
+// Http错误类
 class HttpError extends Error {
   status: number
   body: string
@@ -118,7 +132,7 @@ class HttpError extends Error {
   }
 }
 
-// 响应类型定义
+// API响应类型
 interface ApiResponse<T> {
   data: T | null
   status: number
@@ -126,8 +140,8 @@ interface ApiResponse<T> {
   headers: Headers
 }
 
-// 创建默认的HTTP客户端实例
-// const httpClient = new HttpClient('http://103.151.217.252:65533/api')
-const httpClient = new HttpClient('http://localhost:65533/api')
+// 创建httpClient实例
+const httpClient = new HttpClient('http://localhost:65533')
 
-export { HttpClient, HttpError, httpClient, type ApiResponse }
+export type { ApiResponse, HttpError }
+export { HttpClient, httpClient }
