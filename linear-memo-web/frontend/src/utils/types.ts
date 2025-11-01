@@ -2,6 +2,7 @@
 export interface Card {
   id: number
   deck_id: number
+  user_id: number
   front: string
   back: string
   last_review: string | null
@@ -24,6 +25,7 @@ export interface Deck {
 export interface Arrangement {
   id: number
   deck_id: number
+  user_id: number
   count: number
   created_at: string
 }

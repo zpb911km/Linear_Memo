@@ -2,6 +2,7 @@
 import { httpClient, type ApiResponse } from './httpClient'
 import { useNotificationStore } from '../stores/notificationStore'
 import type { Card, Deck, Arrangement, DeckDetail, NextCardInfo } from './types'
+import { useAuthStore } from '../stores/authStore'
 
 // API状态类型
 interface ApiState<T> {
@@ -79,8 +80,14 @@ async function callApiWithFeedback<T>(
 // 卡组管理API
 // 创建卡组
 async function createDeck(deckData: Omit<Deck, 'id'>): Promise<any> {
+  const authStore = useAuthStore()
+  const dataWithUserId = {
+    ...deckData,
+    user_id: authStore.user?.id
+  }
+  
   return callApiWithFeedback(
-    () => httpClient.post<any>('/decks', deckData),
+    () => httpClient.post<any>('/decks', dataWithUserId),
     '卡组创建成功',
     '创建卡组失败',
   ) as Promise<any>
@@ -92,8 +99,14 @@ interface ExtendedDeck extends Deck {
 
 // 编辑卡组
 async function updateDeck(deckId: number, deckData: Partial<ExtendedDeck>): Promise<any> {
+  const authStore = useAuthStore()
+  const dataWithUserId = {
+    ...deckData,
+    user_id: authStore.user?.id
+  }
+  
   return callApiWithFeedback(
-    () => httpClient.put<any>(`/decks/${deckId}`, deckData),
+    () => httpClient.put<any>(`/decks/${deckId}`, dataWithUserId),
     '卡组更新成功',
     '更新卡组失败',
   ) as Promise<any>
@@ -138,8 +151,14 @@ async function fetchCards(deckId: number): Promise<Card[]> {
 
 // 添加卡片
 async function addCard(cardData: Omit<Card, 'id'>): Promise<any> {
+  const authStore = useAuthStore()
+  const dataWithUserId = {
+    ...cardData,
+    user_id: authStore.user?.id
+  }
+  
   return callApiWithFeedback(
-    () => httpClient.post<any>('/cards', cardData),
+    () => httpClient.post<any>('/cards', dataWithUserId),
     '卡片添加成功',
     '添加卡片失败',
   ) as Promise<any>
@@ -147,8 +166,14 @@ async function addCard(cardData: Omit<Card, 'id'>): Promise<any> {
 
 // 更新卡片
 async function updateCard(cardId: number, cardData: Partial<Card>): Promise<any> {
+  const authStore = useAuthStore()
+  const dataWithUserId = {
+    ...cardData,
+    user_id: authStore.user?.id
+  }
+  
   return callApiWithFeedback(
-    () => httpClient.put<any>(`/cards/${cardId}`, cardData),
+    () => httpClient.put<any>(`/cards/${cardId}`, dataWithUserId),
     '卡片更新成功',
     '更新卡片失败',
   ) as Promise<any>
@@ -182,8 +207,14 @@ async function fetchNextCard(deckId: number): Promise<Card | null> {
 
 // 处理卡片复习反馈
 async function reviewCard(cardId: number, feedback: number): Promise<any> {
+  const authStore = useAuthStore()
+  const dataWithUserId = {
+    feedback,
+    user_id: authStore.user?.id
+  }
+  
   return callApiWithFeedback(
-    () => httpClient.post<any>(`/cards/${cardId}/review`, { feedback }),
+    () => httpClient.post<any>(`/cards/${cardId}/review`, dataWithUserId),
     '复习反馈处理成功',
     '处理复习反馈失败',
   ) as Promise<any>
@@ -191,10 +222,13 @@ async function reviewCard(cardId: number, feedback: number): Promise<any> {
 
 // 复习和下一次卡片整合
 async function reviewAndNextCard(deckId: number, cardId: number, feedback: number) {
+  const authStore = useAuthStore()
+  const userId = authStore.user?.id
+  
   return callApiWithFeedback(
     () =>
       httpClient.post<any>(
-        `/review_and_next_card?deck_id=${deckId}&card_id=${cardId}&feedback=${feedback}`,
+        `/review_and_next_card?deck_id=${deckId}&card_id=${cardId}&feedback=${feedback}&user_id=${userId}`,
       ),
     '复习反馈处理成功',
     '处理复习反馈失败',
@@ -213,8 +247,14 @@ async function searchCards(deckId: number, keyword: string): Promise<Card[]> {
 // 安排管理API
 // 创建安排
 async function createArrangement(arrangementData: Omit<Arrangement, 'id'>): Promise<any> {
+  const authStore = useAuthStore()
+  const dataWithUserId = {
+    ...arrangementData,
+    user_id: authStore.user?.id
+  }
+  
   return callApiWithFeedback(
-    () => httpClient.post<any>('/arrangements', arrangementData),
+    () => httpClient.post<any>('/arrangements', dataWithUserId),
     '安排创建成功',
     '创建安排失败',
   ) as Promise<any>
@@ -225,8 +265,14 @@ async function updateArrangement(
   arrangementId: number,
   arrangementData: Partial<Arrangement>,
 ): Promise<any> {
+  const authStore = useAuthStore()
+  const dataWithUserId = {
+    ...arrangementData,
+    user_id: authStore.user?.id
+  }
+  
   return callApiWithFeedback(
-    () => httpClient.put<any>(`/arrangements/${arrangementId}`, arrangementData),
+    () => httpClient.put<any>(`/arrangements/${arrangementId}`, dataWithUserId),
     '安排更新成功',
     '更新安排失败',
   ) as Promise<any>

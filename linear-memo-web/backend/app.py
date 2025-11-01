@@ -433,9 +433,10 @@ def create_deck():
     if not request.json:
         return jsonify({"error": "Invalid request"}), 400
     name = request.json.get("name")
+    user_id= request.json.get("user_id")
     max_deck_id = Deck.query.order_by(Deck.id.desc()).first().id  # type: ignore
     new_deck_id = max_deck_id + 1
-    new_deck = Deck(id=new_deck_id, name=name)
+    new_deck = Deck(id=new_deck_id, name=name,user_id=user_id)
     new_arrangement = Arrangement(deck_id=new_deck_id, count=10)
     db.session.add(new_deck)
     db.session.add(new_arrangement)

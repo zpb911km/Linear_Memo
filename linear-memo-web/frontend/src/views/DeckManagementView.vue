@@ -13,6 +13,9 @@ import {
   fetchArrangement,
 } from '../utils/api'
 import type { Card, Deck } from '@/utils/types'
+import { useAuthStore } from '@/stores/authStore'
+
+const authStore = useAuthStore()
 
 // 卡组列表
 const decks = ref<Deck[]>([])
@@ -52,6 +55,7 @@ const addNewDeck = async () => {
   if (deckName) {
     const response = await createDeck({
       name: deckName,
+      user_id: authStore.user?.id!,
       forget_line: 0.4,
       omega: 0.9,
       max_delta: 365,
@@ -105,6 +109,7 @@ const saveDeck = async () => {
     }
     const response = await updateDeck(editingDeck.value.id, {
       name: editingDeckName.value,
+      user_id: authStore.user?.id!,
       forget_line: editingDeckFogetLine.value,
       omega: editingDeckOmega.value,
       max_delta: editingDeckMaxDelta.value,
@@ -124,8 +129,13 @@ const addCards = async (newCards: Card[]) => {
     for (const card of newCards) {
       await addCard({
         deck_id: deckId,
+        user_id: authStore.user?.id!,
         front: card.front,
         back: card.back,
+        last_review: null,
+        stability: 0.4,
+        review_interval: 1,
+        status: false,
       })
     }
     await loadCardsForDeck(deckId)
@@ -151,6 +161,7 @@ const updateCards = async (updatedCards: Card[]) => {
       await updateCard(card.id, {
         front: card.front,
         back: card.back,
+        user_id: authStore.user?.id!,
       })
     }
     await loadCardsForDeck(deckId)
