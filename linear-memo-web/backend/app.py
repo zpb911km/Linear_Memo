@@ -5,22 +5,63 @@ from random import randint
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import (
+    JWTManager,
+    jwt_required,
+    create_access_token,
+    get_jwt_identity,
+)
 from sqlalchemy.sql import func, or_
 from typing import List
-from math import exp
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 app = Flask(__name__)
+app.config["JWT_SECRET_KEY"] = "your-super-secret-key-change-in-production"
 CORS(app, origins="*")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///linear_memo.db"
 db = SQLAlchemy(app)
+jwt = JWTManager(app)
 DTFormat = r"%Y/%m/%d %H:%M"
 app.config["STATIC_FOLDER"] = os.path.join(os.path.dirname(__file__), "dist")
 
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
+    password = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    decks = db.relationship(
+        "Deck", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
+
+    def __init__(self, username: str, password: str, email: str = None):
+        self.username = username
+        self.email = email
+        self.password = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password, password)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class Deck(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        default=1,
+        nullable=False,
+    )
     cards = db.relationship(
         "Card",
         backref="deck",
@@ -109,6 +150,12 @@ class Deck(db.Model):
 
 class Card(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        default=1,
+        nullable=False,
+    )
     deck_id = db.Column(db.Integer, db.ForeignKey("deck.id"), nullable=False)
     front = db.Column(db.Text, nullable=False)
     back = db.Column(db.Text, nullable=False)
@@ -229,6 +276,12 @@ class Card(db.Model):
 
 class History(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        default=1,
+        nullable=False,
+    )
     card_id = db.Column(db.Integer, db.ForeignKey("card.id"), nullable=False)
     review_date = db.Column(db.DateTime, nullable=False)
     stability = db.Column(db.Float, nullable=False)
@@ -247,6 +300,12 @@ class History(db.Model):
 
 class Arrangement(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        default=1,
+        nullable=False,
+    )
     deck_id = db.Column(db.Integer, db.ForeignKey("deck.id"), nullable=False)
     count = db.Column(db.Integer, nullable=False)
 
@@ -267,6 +326,105 @@ def try_init_db():
             db.create_all()
         except Exception:
             pass
+
+
+# 用户认证相关API
+@app.route("/api/register", methods=["POST"])
+def register():
+    """用户注册"""
+    try:
+        data = request.get_json()
+
+        # 验证必需字段
+        if not data or not data.get("username") or not data.get("password"):
+            return jsonify({"error": "用户名和密码都是必需的"}), 400
+
+        username = data["username"].strip()
+        password = data["password"]
+        email = data.get("email", "").strip() if data.get("email") else None
+
+        # 验证用户名是否已存在
+        if User.query.filter_by(username=username).first():
+            return jsonify({"error": "用户名已存在"}), 400
+
+        # 验证邮箱是否已存在（如果提供了邮箱）
+        if email and User.query.filter_by(email=email).first():
+            return jsonify({"error": "邮箱已被注册"}), 400
+
+        # 创建新用户
+        user = User(username=username, password=password, email=email)
+
+        db.session.add(user)
+        db.session.commit()
+
+        # 创建访问令牌
+        access_token = create_access_token(identity=user.id)
+
+        return (
+            jsonify(
+                {
+                    "message": "注册成功",
+                    "access_token": access_token,
+                    "user": user.to_dict(),
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"注册失败: {str(e)}"}), 500
+
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    """用户登录"""
+    data = request.get_json()
+
+    if not data or not data.get("username") or not data.get("password"):
+        return jsonify({"error": "用户名和密码都是必需的"}), 400
+
+    username = data["username"].strip()
+    password = data["password"]
+
+    # 查找用户（支持用户名或邮箱登录）
+    user = User.query.filter(
+        (User.username == username) | (User.email == username)
+    ).first()
+
+    if not user or not user.check_password(password):
+        return jsonify({"error": "用户名或密码错误"}), 401
+
+    # 创建访问令牌
+    access_token = create_access_token(identity=str(user.id))
+
+    return (
+        jsonify(
+            {
+                "message": "登录成功",
+                "access_token": access_token,
+                "user": user.to_dict(),
+            }
+        ),
+        200,
+    )
+
+
+@app.route("/api/user/profile", methods=["GET"])
+@jwt_required()
+def get_user_profile():
+    """获取当前用户信息"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user:
+            return jsonify({"error": "用户不存在"}), 404
+
+        return jsonify({"user": user.to_dict()}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"获取用户信息失败: {str(e)}"}), 500
 
 
 # 卡组管理
@@ -494,7 +652,7 @@ def list_review_cards():
     deck_id = request.args.get("deck_id")
     if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
-    current_time_stamp = func.strftime("%s", func.current_timestamp())
+    current_time_stamp = func.strftime("%s", func.now())
     overtime_cards = (
         Card.query.filter_by(deck_id=deck_id)
         .filter(Card.last_review.isnot(None))  # type: ignore
