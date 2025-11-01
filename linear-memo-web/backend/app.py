@@ -7,6 +7,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func, or_
 from typing import List
+from math import exp
 
 
 app = Flask(__name__)
@@ -151,7 +152,7 @@ class Card(db.Model):
         Returns:
             None
         """
-        deck = Deck.query.filter_by(id=self.deck_id).first()
+        deck: Deck | None = Deck.query.filter_by(id=self.deck_id).first()
         if deck is None:
             raise ValueError("Deck not found")
 
@@ -169,7 +170,10 @@ class Card(db.Model):
 
         if abs(feedback - 0) < 1e-10:
             # 重置卡片状态
-            self = Card(self.deck_id, self.front, self.back)
+            self.stability = deck.forget_line
+            self.review_interval = 1
+            self.last_review = None
+            self.status = False
 
         # 记录历史反馈
         history = History(

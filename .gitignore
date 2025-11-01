@@ -6,3 +6,4 @@ pull.sh
 push.sh
 db.prg
 __pycache__/
+linear-memo-web/backend/visualize_db.py
