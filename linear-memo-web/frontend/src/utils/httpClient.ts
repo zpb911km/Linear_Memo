@@ -42,12 +42,18 @@ class HttpClient {
   // 通用请求方法
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = this.buildUrl(endpoint)
+    const token = localStorage.getItem('authToken')
+    if (token) {  // 如果有保存的认证令牌，添加到请求头部
+      this.setDefaultHeaders({
+        'Authorization': `Bearer ${token}`
+      })
+    }
     const config: RequestInit = {
       ...options,
       headers: this.mergeHeaders(options.headers as Record<string, string>),
     }
 
-    try {
+    return (async () => {
       const response = await fetch(url, config)
 
       // 检查响应状态
@@ -66,18 +72,15 @@ class HttpClient {
         data = await response.json()
       }
 
-      return {
+      const result = {
         data,
         status: response.status,
         statusText: response.statusText,
         headers: response.headers,
       }
-    } catch (error: any) {
-      if (error instanceof HttpError) {
-        throw error
-      }
-      throw new HttpError(`Network error: ${error.message}`, 0, error.message)
-    }
+
+      return result
+    })()
   }
 
   // GET请求
