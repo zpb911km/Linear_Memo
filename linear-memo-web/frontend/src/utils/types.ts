@@ -51,3 +51,10 @@ export interface User {
   email: string | null
   created_at: string
 }
+
+// 注册信息类型
+export interface AccessUserInfo {
+  access_token: string
+  message: string
+  user: User
+}

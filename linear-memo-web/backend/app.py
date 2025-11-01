@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from math import log
 import os
 from random import randint
+import bcrypt
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -36,7 +37,7 @@ class User(db.Model):
         "Deck", backref="user", lazy=True, cascade="all, delete-orphan"
     )
 
-    def __init__(self, username: str, password: str, email: str = None):
+    def __init__(self, username: str, password: str, email: str | None = None):
         self.username = username
         self.email = email
         self.password = generate_password_hash(password)
@@ -430,6 +431,7 @@ def get_user_profile():
 # 卡组管理
 # 1. 创建卡组
 @app.route("/api/decks", methods=["POST"])
+@jwt_required()
 def create_deck():
     if not request.json:
         return jsonify({"error": "Invalid request"}), 400
@@ -446,6 +448,7 @@ def create_deck():
 
 # 2. 编辑卡组
 @app.route("/api/decks/<int:deck_id>", methods=["PUT"])
+@jwt_required()
 def edit_deck(deck_id: int):
     """
     编辑卡组信息，可修改名称、遗忘线、Ω、最大间隔参数
@@ -489,6 +492,7 @@ def edit_deck(deck_id: int):
 
 # 3. 删除卡组
 @app.route("/api/decks/<int:deck_id>", methods=["DELETE"])
+@jwt_required()
 def delete_deck(deck_id: int):
     deck = Deck.query.filter_by(id=deck_id).first()
     if deck is None:
@@ -500,6 +504,7 @@ def delete_deck(deck_id: int):
 
 # 4. 列出卡组
 @app.route("/api/decks", methods=["GET"])
+@jwt_required()
 def list_decks():
     decks = Deck.query.all()
     return jsonify(
@@ -518,6 +523,7 @@ def list_decks():
 
 # 5. 卡组详情
 @app.route("/api/decks/<int:deck_id>", methods=["GET"])
+@jwt_required()
 def get_deck(deck_id: int):
     deck: Deck | None = Deck.query.filter_by(id=deck_id).first()
     if deck is None:
@@ -541,6 +547,7 @@ def get_deck(deck_id: int):
 # 卡片管理
 # 1. 创建卡片
 @app.route("/api/cards", methods=["POST"])
+@jwt_required()
 def create_card():
     """
     创建卡片，需要指定卡组id、正反面文字
@@ -565,6 +572,7 @@ def create_card():
 
 # 2. 编辑卡片
 @app.route("/api/cards/<int:card_id>", methods=["PUT"])
+@jwt_required()
 def edit_card(card_id: int):
     """
     编辑卡片信息，可修改卡片正反面
@@ -591,6 +599,7 @@ def edit_card(card_id: int):
 
 # 3. 删除卡片
 @app.route("/api/cards/<int:card_id>", methods=["DELETE"])
+@jwt_required()
 def delete_card(card_id: int):
     card = Card.query.filter_by(id=card_id).first()
     if card is None:
@@ -602,6 +611,7 @@ def delete_card(card_id: int):
 
 # 4. 列出卡组的卡片
 @app.route("/api/cards", methods=["GET"])
+@jwt_required()
 def list_cards():
     deck_id = request.args.get("deck_id")
     if deck_id is not None:
@@ -615,6 +625,7 @@ def list_cards():
 
 # 5. 复习卡片
 @app.route("/api/cards/<int:card_id>/review", methods=["POST"])
+@jwt_required()
 def review_card(card_id: int):
     """
     复习卡片，需要提供用户反馈分数
@@ -645,6 +656,7 @@ def review_card(card_id: int):
 
 # 6. 列出卡组的待复习卡片
 @app.route("/api/cards/review", methods=["GET"])
+@jwt_required()
 def list_review_cards():
     """
     列出待复习卡片，指定卡组id
@@ -675,6 +687,7 @@ def list_review_cards():
 
 # 7. 搜索卡组的卡片
 @app.route("/api/cards/search", methods=["GET"])
+@jwt_required()
 def search_cards():
     """
     搜索卡组的卡片，指定卡组id和关键字
@@ -703,6 +716,7 @@ def search_cards():
 
 # 8. 返回当前最需要复习的卡片
 @app.route("/api/next_card", methods=["GET"])
+@jwt_required()
 def next_card():
     """
     返回当前最需要复习的卡片，指定卡组id
@@ -753,6 +767,7 @@ def next_card():
 
 # 9. 整合
 @app.route("/api/review_and_next_card", methods=["POST"])
+@jwt_required()
 def review_and_next_card():
     """
     复习卡片并返回当前最需要复习的卡片，指定卡组id
@@ -829,6 +844,7 @@ def review_and_next_card():
 # 安排管理
 # 1. 创建安排
 @app.route("/api/arrangements", methods=["POST"])
+@jwt_required()
 def create_arrangement():
     """
     创建安排，指定卡组id, 数量
@@ -851,6 +867,7 @@ def create_arrangement():
 
 # 2. 编辑安排
 @app.route("/api/arrangements/<int:arrangement_id>", methods=["PUT"])
+@jwt_required()
 def edit_arrangement(arrangement_id: int):
     """
     编辑安排，可修改日期和卡片数量
@@ -872,6 +889,7 @@ def edit_arrangement(arrangement_id: int):
 
 # 3. 删除安排
 @app.route("/api/arrangements/<int:arrangement_id>", methods=["DELETE"])
+@jwt_required()
 def delete_arrangement(arrangement_id: int):
     arrangement = Arrangement.query.filter_by(id=arrangement_id).first()
     if arrangement is None:
@@ -883,6 +901,7 @@ def delete_arrangement(arrangement_id: int):
 
 # 4. 列出卡组的安排
 @app.route("/api/arrangements", methods=["GET"])
+@jwt_required()
 def list_arrangements():
     deck_id = request.args.get("deck_id")
     if deck_id is not None:
@@ -903,6 +922,7 @@ def static_file(path):
 
 
 @app.route("/")
+@jwt_required()
 def index():
     return send_from_directory(app.config["STATIC_FOLDER"], "index.html")
 

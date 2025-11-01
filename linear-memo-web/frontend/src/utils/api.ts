@@ -1,7 +1,7 @@
 // API交互模块
 import { httpClient, type ApiResponse } from './httpClient'
 import { useNotificationStore } from '../stores/notificationStore'
-import type { Card, Deck, Arrangement, DeckDetail, NextCardInfo } from './types'
+import type { Card, Deck, Arrangement, DeckDetail, NextCardInfo, AccessUserInfo } from './types'
 
 // API状态类型
 interface ApiState<T> {
@@ -250,6 +250,25 @@ async function fetchArrangement(deckId: number): Promise<Arrangement> {
   ) as unknown as Promise<Arrangement>
 }
 
+//账户管理api
+// 注册
+async function register(data: {username: string, password: string, email?:string}): Promise<AccessUserInfo> {
+  return callApiWithFeedback(
+    () => httpClient.post<{ message: string; token: string }>('/register', data),
+    '注册成功',
+    '注册失败',
+  ) as unknown as Promise<AccessUserInfo>
+}
+
+// 登录
+async function login(data: {username: string, password: string}): Promise<AccessUserInfo> {
+  return callApiWithFeedback(
+    () => httpClient.post<{ message: string; token: string }>('/login', data),
+    '登录成功',
+    '登录失败',
+  ) as unknown as Promise<AccessUserInfo>
+}
+
 // 导出API状态创建函数和API函数
 export {
   createApiState,
@@ -274,5 +293,8 @@ export {
   updateArrangement,
   deleteArrangement,
   fetchArrangement,
+  // 账户管理
+  register,
+  login,
   type ApiState,
 }

@@ -72,6 +72,7 @@ import { useNotificationStore } from '../stores/notificationStore'
 import { httpClient } from '../utils/httpClient'
 import type { ApiResponse } from '../utils/httpClient'
 import type { User } from '../utils/types'
+import { register } from '@/utils/api'
 
 const router = useRouter()
 const notificationStore = useNotificationStore()
@@ -113,30 +114,23 @@ const handleRegister = async () => {
   try {
     const requestData: any = {
       username: registerForm.username,
-      password: registerForm.password
+      password: registerForm.password,
     }
     
     if (registerForm.email) {
       requestData.email = registerForm.email
     }
     
-    const response: ApiResponse<{ access_token: string; user: User; message: string }> = await httpClient.post('/api/register', requestData)
-
-    if (response.data && response.data.access_token) {
-      // 保存token到localStorage
-      localStorage.setItem('authToken', response.data.access_token)
-      
-      // 设置默认Authorization头
-      httpClient.setDefaultHeaders({
-        'Authorization': `Bearer ${response.data.access_token}`
-      })
-      
-      notificationStore.showSuccess('注册成功')
-      // 跳转到主页
-      router.push('/')
-    } else {
-      notificationStore.showError(response.data?.message || '注册失败')
+    const response = await register(requestData)
+    if (!response || !response.access_token) {
+      notificationStore.showError('注册失败!!!')
+      return
     }
+    localStorage.setItem('authToken', response.access_token)
+    httpClient.setDefaultHeaders({
+      'Authorization': `Bearer ${response.access_token}`
+    })
+    router.push('/')
   } catch (error: any) {
     console.error('Register error:', error)
     notificationStore.showError(error.message || '注册过程中发生错误')

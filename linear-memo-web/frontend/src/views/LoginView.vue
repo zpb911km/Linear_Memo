@@ -45,8 +45,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotificationStore } from '../stores/notificationStore'
 import { httpClient } from '../utils/httpClient'
-import type { ApiResponse } from '../utils/httpClient'
-import type { User } from '../utils/types'
+import { login } from '../utils/api'
 
 const router = useRouter()
 const notificationStore = useNotificationStore()
@@ -67,26 +66,19 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    const response: ApiResponse<{ access_token: string; user: User; message: string }> = await httpClient.post('/api/login', {
+    const response = await login({
       username: loginForm.value.username,
       password: loginForm.value.password
     })
-
-    if (response.data && response.data.access_token) {
-      // 保存token到localStorage
-      localStorage.setItem('authToken', response.data.access_token)
-      
-      // 设置默认Authorization头
-      httpClient.setDefaultHeaders({
-        'Authorization': `Bearer ${response.data.access_token}`
-      })
-      
-      notificationStore.showSuccess('登录成功')
-      // 跳转到主页
-      router.push('/')
-    } else {
-      notificationStore.showError(response.data?.message || '登录失败')
+    if (!response || !response.access_token) {
+      notificationStore.showError('用户名或密码错误')
+      return
     }
+    localStorage.setItem('authToken', response.access_token)
+    httpClient.setDefaultHeaders({
+      'Authorization': `Bearer ${response.access_token}`
+    })
+    router.push('/')
   } catch (error: any) {
     console.error('Login error:', error)
     notificationStore.showError(error.message || '登录过程中发生错误')

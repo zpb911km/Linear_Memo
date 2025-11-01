@@ -54,6 +54,7 @@ class HttpClient {
     }
 
     return (async () => {
+      console.log('Requesting', url, config)
       const response = await fetch(url, config)
 
       // 检查响应状态
@@ -143,8 +144,10 @@ interface ApiResponse<T> {
   headers: Headers
 }
 
-// 创建httpClient实例
-const httpClient = new HttpClient('http://localhost:65533')
+// 创建默认的HTTP客户端实例
+// const httpClient = new HttpClient('http://103.151.217.252:65533/api')
+const httpClient = new HttpClient('http://localhost:65533/api')
+
 
 export type { ApiResponse, HttpError }
 export { HttpClient, httpClient }
