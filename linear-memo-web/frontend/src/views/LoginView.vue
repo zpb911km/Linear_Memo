@@ -75,6 +75,7 @@ const handleLogin = async () => {
       return
     }
     localStorage.setItem('authToken', response.access_token)
+    localStorage.setItem('refreshToken', response.refresh_token)
     httpClient.setDefaultHeaders({
       'Authorization': `Bearer ${response.access_token}`
     })

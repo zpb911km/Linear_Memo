@@ -5,7 +5,7 @@ import { useThemeStore } from './stores/themeStore'
 import Snackbar from './components/Snackbar.vue'
 import ProgressBar from './components/ProgressBar.vue'
 import { useAuthStore } from './stores/authStore'
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 
 const notificationStore = useNotificationStore()
 const themeStore = useThemeStore()
@@ -15,9 +15,23 @@ const toggleTheme = () => {
   themeStore.toggleTheme()
 }
 
+const onlogout = () => {
+  authStore.clearAuth()
+}
+
 onMounted(() => {
   // 初始化认证状态
   authStore.initializeAuth()
+})
+
+const refreshClock = setInterval(() => {
+  authStore.refreshToken().catch(() => {
+    authStore.clearAuth()
+  })
+}, 60000)
+
+onUnmounted(() => {
+  clearInterval(refreshClock)
 })
 </script>
 
@@ -37,6 +51,7 @@ onMounted(() => {
           <RouterLink to="/decks" class="nav-link" active-class="active">📁</RouterLink>
           <!-- <RouterLink to="/stats" class="nav-link" active-class="active">📅</RouterLink>
           <RouterLink to="/settings" class="nav-link" active-class="active">⚙</RouterLink> -->
+          <button class="logout" @click="onlogout">⏼</button>
           <button class="theme-toggle-button" @click="toggleTheme">
             {{ themeStore.theme === 'light' ? '🌙' : themeStore.theme === 'dark' ? '☀️' : '🌓' }}
           </button>
@@ -112,6 +127,18 @@ header {
 }
 
 .theme-toggle-button {
+  background: none;
+  border: none;
+  color: var(--color-navbar-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+  /* margin-left: auto; */
+}
+
+.logout {
   background: none;
   border: none;
   color: var(--color-navbar-text);

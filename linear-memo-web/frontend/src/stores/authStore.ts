@@ -23,13 +23,14 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 设置认证信息
-  const setAuth = (authToken: string, userData: User) => {
+  const setAuth = (authToken: string, refreshToken: string, userData: User) => {
     token.value = authToken
     user.value = userData
     isAuthenticated.value = true
     
     // 保存到localStorage
     localStorage.setItem('authToken', authToken)
+    localStorage.setItem('refreshToken', refreshToken)
     
     // 设置HTTP客户端默认头部
     httpClient.setDefaultHeaders({
@@ -45,6 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // 从localStorage移除
     localStorage.removeItem('authToken')
+    localStorage.removeItem('refreshToken')
     
     // 清除HTTP客户端认证头部
     const headers = httpClient.headers
@@ -69,6 +71,35 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const refreshToken = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken')
+      // httpClient.setDefaultHeaders({
+      //   'Authorization': `Bearer ${refreshToken}`
+      // })
+      if (!refreshToken) return
+      const response = await httpClient.post<{ access_token: string }>('/refresh', '', {'Authorization': `Bearer ${refreshToken}`})
+      if (response.data?.access_token) {
+        token.value = response.data.access_token
+        // 刷新HTTP客户端认证头部
+        const headers = httpClient.headers
+        headers['Authorization'] = `Bearer ${token.value}`
+        localStorage.setItem('authToken', token.value)
+      }
+      
+    } catch (error) {
+      console.error('Failed to refresh token:', error)
+      // 如果刷新令牌失败，清除认证状态
+      clearAuth()
+    } 
+    // finally {
+    //   const access_token = localStorage.getItem('authToken')
+    //   httpClient.setDefaultHeaders({
+    //     'Authorization': `Bearer ${access_token}`
+    //   })
+    // }
+  }
+
   // 登出
   const logout = () => {
     clearAuth()
@@ -82,6 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearAuth,
     loadUserInfo,
     logout,
-    initializeAuth
+    initializeAuth,
+    refreshToken
   }
 })

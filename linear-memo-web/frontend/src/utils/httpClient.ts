@@ -1,3 +1,5 @@
+import router from "@/router"
+
 // 自定义HTTP客户端
 class HttpClient {
   private baseUrl: string
@@ -54,15 +56,20 @@ class HttpClient {
     }
 
     return (async () => {
-      console.log('Requesting', url, config)
       const response = await fetch(url, config)
 
       // 检查响应状态
-      if (!response.ok) {
+      if (response.ok === false) {
+        const text = await response.text()
+        console.log('error:', text)
+        if (text.includes('Token has expired')) {
+          localStorage.removeItem('authToken')
+          router.push('/login')
+        }
         throw new HttpError(
           `HTTP error! status: ${response.status}`,
           response.status,
-          await response.text(),
+          text,
         )
       }
 

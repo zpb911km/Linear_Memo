@@ -4,17 +4,18 @@ export interface Card {
   deck_id: number
   front: string
   back: string
-  last_review: string | null
-  stability: number
-  review_interval: number
-  status: boolean
+  last_review?: string | null
+  stability?: number
+  review_interval?: number
+  status?: boolean
+  user_id?: number
 }
 
 // 卡组类型
 export interface Deck {
   id: number
   name: string
-  user_id: number
+  user_id?: number
   forget_line: number
   omega: number
   max_delta: number
@@ -31,10 +32,10 @@ export interface Arrangement {
 // 卡组详情类型
 export interface DeckDetail extends Deck {
   cards_count: number
-  new_cards_count: number
-  review_cards_count: number
-  overtime_cards_count: number
-  remembered_cards_count: number
+  new_count: number
+  review_count: number
+  overtime_count: number
+  remembered_count: number
 }
 
 // 下一张卡片信息类型
@@ -55,6 +56,7 @@ export interface User {
 // 注册信息类型
 export interface AccessUserInfo {
   access_token: string
+  refresh_token: string
   message: string
   user: User
 }

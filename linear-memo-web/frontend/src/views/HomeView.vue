@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/authStore'
 import { onMounted, onUnmounted, ref } from 'vue'
 import type { Deck, DeckDetail } from '@/utils/types'
 import { fetchDecks, fetchDeckDetail } from '@/utils/api'
+import router from '@/router'
 
 const authStore = useAuthStore()
 // 定义一个响应式变量来存储获取的牌堆详细信息
@@ -47,6 +48,7 @@ const clock = setInterval(() => {
     })
     .catch((error) => {
       console.error('获取牌堆列表时出错：', error)
+      router.push('/login')
     })
 }, 60 * 1000) // 每 1 分钟刷新一次牌堆列表
 
@@ -57,40 +59,38 @@ onUnmounted(() => {
 
 <template>
   <div class="home-container">
-    <div class="welcome-section">
-      <h1>欢迎使用 Linear Memo</h1>
-      <p>基于遗忘曲线的智能记忆卡片系统</p>
-      <div class="auth-actions">
-        <template v-if="authStore.isAuthenticated">
-          <div class="home-view">
-            <div class="decks-list">
-              <!-- 遍历每个牌堆详细信息，并使用其 id 作为唯一的键 -->
-              <div v-for="deckDetail in deckDetails" :key="deckDetail.id" class="deck-item">
-                <div class="deck-container">
-                  <h2 class="deck-name">{{ deckDetail.name }}</h2>
-                  <ul class="deck-info">
-                    <li>卡片数量: {{ deckDetail.cards_count }}</li>
-                    <li>新学数量: {{ deckDetail.new_count }}</li>
-                    <li>超时数量: {{ deckDetail.overtime_count }}</li>
-                    <li>复习数量: {{ deckDetail.review_count }}</li>
-                    <li>记住数量: {{ deckDetail.remembered_count }}</li>
-                  </ul>
-                </div>
-                <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link"
-                  >复习</router-link
-                >
+    <div class="auth-actions">
+      <template v-if="authStore.isAuthenticated">
+        <div class="home-view">
+          <div class="decks-list">
+            <!-- 遍历每个牌堆详细信息，并使用其 id 作为唯一的键 -->
+            <div v-for="deckDetail in deckDetails" :key="deckDetail.id" class="deck-item">
+              <div class="deck-container">
+                <h2 class="deck-name">{{ deckDetail.name }}</h2>
+                <ul class="deck-info">
+                  <li>卡片数量: {{ deckDetail.cards_count }}</li>
+                  <li>新学数量: {{ deckDetail.new_count }}</li>
+                  <li>超时数量: {{ deckDetail.overtime_count }}</li>
+                  <li>复习数量: {{ deckDetail.review_count }}</li>
+                  <li>记住数量: {{ deckDetail.remembered_count }}</li>
+                </ul>
               </div>
+              <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link"
+              >复习</router-link
+              >
             </div>
           </div>
-        </template>
-        <template v-else>
-          <p>请登录或注册以开始您的记忆之旅</p>
-          <div class="button-group">
-            <RouterLink to="/login" class="btn btn-primary">登录</RouterLink>
-            <RouterLink to="/register" class="btn btn-secondary">注册</RouterLink>
-          </div>
-        </template>
-      </div>
+        </div>
+      </template>
+      <template v-else>
+        <h1>欢迎使用 Linear Memo</h1>
+        <p>基于遗忘曲线的智能记忆卡片系统</p>
+        <p>请登录或注册以开始您的记忆之旅</p>
+        <div class="button-group">
+          <RouterLink to="/login" class="btn btn-primary">登录</RouterLink>
+          <RouterLink to="/register" class="btn btn-secondary">注册</RouterLink>
+        </div>
+      </template>
     </div>
   </div>
 </template>

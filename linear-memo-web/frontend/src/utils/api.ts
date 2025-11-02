@@ -252,7 +252,7 @@ async function fetchArrangement(deckId: number): Promise<Arrangement> {
 
 //账户管理api
 // 注册
-async function register(data: {username: string, password: string, email?:string}): Promise<AccessUserInfo> {
+async function register(data: {username: string, password: string, email?:string, code:string}): Promise<AccessUserInfo> {
   return callApiWithFeedback(
     () => httpClient.post<{ message: string; token: string }>('/register', data),
     '注册成功',
@@ -267,6 +267,23 @@ async function login(data: {username: string, password: string}): Promise<Access
     '登录成功',
     '登录失败',
   ) as unknown as Promise<AccessUserInfo>
+}
+
+// 其他
+// 查单词
+async function queryDict(word: string): Promise<{front: string, back: string}> {
+  const url = `https://v2.xxapi.cn/api/englishwords?word=${word}`
+  const response = await fetch(url)
+  const content = await response.json().then(data => data.data)
+  console.log(content)
+  const front = content.word
+  const translations = content.translations
+  let back = '<ul>';
+  for (let i = 0; i < translations.length; i++) {
+    back += `<li>${translations[i].pos} ${translations[i].tran_cn}</li>`
+  }
+  back += '</ul>';
+  return {front, back}
 }
 
 // 导出API状态创建函数和API函数
@@ -296,5 +313,7 @@ export {
   // 账户管理
   register,
   login,
+  // 其他
+  queryDict,
   type ApiState,
 }

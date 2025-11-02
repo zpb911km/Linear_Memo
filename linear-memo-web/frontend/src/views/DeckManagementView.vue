@@ -13,6 +13,9 @@ import {
   fetchArrangement,
 } from '../utils/api'
 import type { Card, Deck } from '@/utils/types'
+import { useNotificationStore } from '@/stores/notificationStore'
+
+const notificationStore = useNotificationStore()
 
 // 卡组列表
 const decks = ref<Deck[]>([])
@@ -98,9 +101,8 @@ const editDeck = async (deck: Deck) => {
 // 保存卡组
 const saveDeck = async () => {
   if (editingDeck) {
-    if (!editingDeck.value?.id) {
-      alert('出错了')
-      window.location.reload()
+    if (editingDeck.value?.id == null) {
+      notificationStore.showError('出错了,你在编辑虚空')
       return
     }
     const response = await updateDeck(editingDeck.value.id, {

@@ -34,9 +34,9 @@ const addedCards = ref<Card[]>([])
 const editingCardIndex = ref<number | null>(null)
 const keyword = ref('')
 
-watch(keyword, () => {
-  filterCards()
-})
+// watch(keyword, () => {
+//   filterCards()
+// })
 
 // 过滤卡片
 const filterCards = () => {
@@ -170,6 +170,9 @@ const closeDialog = () => {
 
       <div class="modal-footer">
         <button class="add-card-btn" @click="addCard">添加卡片</button>
+        <button class="add-card-btn" @click="batchEditCard">批量导出</button>
+        <button class="add-card-btn" @click="batchAddCard">批量导入</button>
+        <!-- TODO -->
         <div class="save-cancel-actions">
           <button class="save-btn" @click="saveAllCards">保存所有</button>
           <button class="cancel-btn" @click="cancelAllCards">取消</button>

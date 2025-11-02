@@ -49,6 +49,16 @@
             placeholder="请再次输入密码"
           />
         </div>
+        <div class="form-group">
+          <label for="password">执行码:</label>
+          <input
+            id="code"
+            v-model="registerForm.code"
+            type="password"
+            placeholder="请输入执行码"
+            maxlength="6"
+          />
+        </div>
         
         <button type="submit" class="auth-button" :disabled="loading">
           {{ loading ? '注册中...' : '注册' }}
@@ -70,8 +80,6 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotificationStore } from '../stores/notificationStore'
 import { httpClient } from '../utils/httpClient'
-import type { ApiResponse } from '../utils/httpClient'
-import type { User } from '../utils/types'
 import { register } from '@/utils/api'
 
 const router = useRouter()
@@ -80,7 +88,8 @@ const notificationStore = useNotificationStore()
 const registerForm = reactive({
   username: '',
   email: '',
-  password: ''
+  password: '',
+  code: '',
 })
 
 const confirmPassword = ref('')
@@ -109,12 +118,18 @@ const handleRegister = async () => {
     return
   }
 
+  if (!registerForm.code) {
+    notificationStore.showError('请输入执行码')
+    return
+  }
+
   loading.value = true
   
   try {
     const requestData: any = {
       username: registerForm.username,
       password: registerForm.password,
+      code: registerForm.code
     }
     
     if (registerForm.email) {

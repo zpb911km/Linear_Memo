@@ -8,6 +8,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import (
     JWTManager,
+    create_refresh_token,
     jwt_required,
     create_access_token,
     get_jwt_identity,
@@ -79,9 +80,10 @@ class Deck(db.Model):
         cascade="all, delete-orphan",
     )
 
-    def __init__(self, id: int, name: str):
+    def __init__(self, id: int, name: str, user_id: int):
         self.id = id
         self.name = name
+        self.user_id = user_id
 
     def __str__(self):
         return f"Deck(id={self.id}, name={self.name})"
@@ -168,7 +170,7 @@ class Card(db.Model):
     review_interval = db.Column(db.Float, nullable=False, default=1)
     status = db.Column(db.Boolean, nullable=False, default=False)
 
-    def __init__(self, deck_id: int, front: str, back: str):
+    def __init__(self, deck_id: int, front: str, back: str, user_id: int):
         self.deck_id = deck_id
         self.front = front
         self.back = back
@@ -176,6 +178,7 @@ class Card(db.Model):
         self.stability = 0.4
         self.review_interval = 1
         self.status = False
+        self.user_id = user_id
 
     def __str__(self):
         return f"Card(id={self.id}, front={self.front}, back={self.back})"
@@ -228,6 +231,7 @@ class Card(db.Model):
             card_id=self.id,
             review_date=datetime.now(),
             stability=feedback / 100,
+            user_id=self.user_id
         )
         db.session.add(history)
 
@@ -287,10 +291,11 @@ class History(db.Model):
     review_date = db.Column(db.DateTime, nullable=False)
     stability = db.Column(db.Float, nullable=False)
 
-    def __init__(self, card_id: int, review_date: datetime, stability: float):
+    def __init__(self, card_id: int, review_date: datetime, stability: float, user_id: int):
         self.card_id = card_id
         self.review_date = review_date
         self.stability = stability
+        self.user_id = user_id
 
     def __str__(self):
         return f"History(id={self.id}, card_id={self.card_id}, review_date={self.review_date}, stability={self.stability})"
@@ -310,9 +315,10 @@ class Arrangement(db.Model):
     deck_id = db.Column(db.Integer, db.ForeignKey("deck.id"), nullable=False)
     count = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, deck_id: int, count: int):
+    def __init__(self, deck_id: int, count: int, user_id: int):
         self.deck_id = deck_id
         self.count = count
+        self.user_id = user_id
 
     def __str__(self):
         return f"Arrangement(id={self.id}, deck_id={self.deck_id}, count={self.count})"
@@ -337,12 +343,20 @@ def register():
         data = request.get_json()
 
         # 验证必需字段
-        if not data or not data.get("username") or not data.get("password"):
+        if not data or not data.get("username") or not data.get("password") or not data.get("code"):
             return jsonify({"error": "用户名和密码都是必需的"}), 400
 
         username = data["username"].strip()
         password = data["password"]
         email = data.get("email", "").strip() if data.get("email") else None
+        code = data["code"].strip()
+        now = datetime.now()
+        time_parts = [now.hour, now.minute, now.date().day]
+        calc_code = lambda x, y, z: f"{int(str(x+y)[:len(str(x+y))])}{z:02}"
+        correct_code = calc_code(*time_parts)
+
+        if correct_code != code:
+            return jsonify({"error": "请找管理员"}), 400
 
         # 验证用户名是否已存在
         if User.query.filter_by(username=username).first():
@@ -359,13 +373,15 @@ def register():
         db.session.commit()
 
         # 创建访问令牌
-        access_token = create_access_token(identity=user.id)
+        access_token = create_access_token(identity=str(user.id))
+        refresh_token = create_refresh_token(identity=str(user.id))
 
         return (
             jsonify(
                 {
                     "message": "注册成功",
                     "access_token": access_token,
+                    "refresh_token": refresh_token,
                     "user": user.to_dict(),
                 }
             ),
@@ -398,18 +414,30 @@ def login():
 
     # 创建访问令牌
     access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
 
     return (
         jsonify(
             {
                 "message": "登录成功",
                 "access_token": access_token,
+                "refresh_token": refresh_token,
                 "user": user.to_dict(),
             }
         ),
         200,
     )
 
+
+@app.route("/api/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    """
+    刷新令牌
+    """
+    user_id = get_jwt_identity()
+    access_token = create_access_token(identity=user_id)
+    return jsonify(access_token=access_token)
 
 @app.route("/api/user/profile", methods=["GET"])
 @jwt_required()
@@ -436,10 +464,15 @@ def create_deck():
     if not request.json:
         return jsonify({"error": "Invalid request"}), 400
     name = request.json.get("name")
-    max_deck_id = Deck.query.order_by(Deck.id.desc()).first().id  # type: ignore
+    last_deck = Deck.query.order_by(Deck.id.desc()).first() # type: ignore
+    if last_deck is None:
+        max_deck_id = -1
+    else:
+        max_deck_id = last_deck.id
     new_deck_id = max_deck_id + 1
-    new_deck = Deck(id=new_deck_id, name=name)
-    new_arrangement = Arrangement(deck_id=new_deck_id, count=10)
+    user_id = get_jwt_identity()
+    new_deck = Deck(id=new_deck_id, name=name, user_id=user_id)
+    new_arrangement = Arrangement(deck_id=new_deck_id, count=10, user_id=user_id)
     db.session.add(new_deck)
     db.session.add(new_arrangement)
     db.session.commit()
@@ -506,7 +539,8 @@ def delete_deck(deck_id: int):
 @app.route("/api/decks", methods=["GET"])
 @jwt_required()
 def list_decks():
-    decks = Deck.query.all()
+    user_id = get_jwt_identity()
+    decks = Deck.query.filter_by(user_id=user_id).all()
     return jsonify(
         [
             {
@@ -564,7 +598,8 @@ def create_card():
     back = request.json.get("back")
     if deck_id is None or front is None or back is None:
         return jsonify({"error": "deck_id, front and back are required"}), 400
-    new_card = Card(deck_id=deck_id, front=front, back=back)
+    user_id = get_jwt_identity()
+    new_card = Card(deck_id=deck_id, front=front, back=back, user_id=user_id)
     db.session.add(new_card)
     db.session.commit()
     return jsonify({"message": "Card created"})
@@ -751,7 +786,6 @@ def next_card():
             - current_time_stamp
         )
     ).all()
-    print(cards)
     if len(cards) == 0:
         return jsonify({"message": "No cards to review"}), 204
     index = 1 if len(cards) > 1 else 0
@@ -859,7 +893,8 @@ def create_arrangement():
     count = request.json.get("count")
     if count is None:
         return jsonify({"error": "count is required"}), 400
-    arrangement = Arrangement(deck_id=deck_id, count=count)
+    user_id = get_jwt_identity()
+    arrangement = Arrangement(deck_id=deck_id, count=count, user_id=user_id)
     db.session.add(arrangement)
     db.session.commit()
     return jsonify({"message": "Arrangement created"})
@@ -922,7 +957,6 @@ def static_file(path):
 
 
 @app.route("/")
-@jwt_required()
 def index():
     return send_from_directory(app.config["STATIC_FOLDER"], "index.html")
 

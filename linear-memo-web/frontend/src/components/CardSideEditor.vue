@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { queryDict } from '@/utils/api';
 import { ref, onMounted, watch } from 'vue'
 interface Props {
   index: number
@@ -12,7 +13,6 @@ const emit = defineEmits<{
 }>()
 // 编辑器状态
 const frontRaw = ref(props.front || '')
-
 const backRaw = ref(props.back || '')
 
 // 保存
@@ -22,6 +22,16 @@ const save = () => {
 // 取消
 const cancel = () => {
   emit('cancel')
+}
+// 查词
+const query = async () => {
+  if (!frontRaw.value || frontRaw.value.trim() === '') {
+    frontRaw.value = '请输入单词'
+    return
+  }
+  const {front, back} = await queryDict(frontRaw.value)
+  frontRaw.value = front
+  backRaw.value = back
 }
 </script>
 <template>
@@ -54,9 +64,14 @@ const cancel = () => {
       </div>
     </div>
 
-    <div class="editor-actions">
-      <button class="save-btn" @click="save">保存</button>
-      <button class="cancel-btn" @click="cancel">取消</button>
+    <div style="display: flex;">
+      <div class="editor-addons">
+        <button class="query" @click="query">简单查词</button>
+      </div>
+      <div class="editor-actions">
+        <button class="save-btn" @click="save">暂存</button>
+        <button class="cancel-btn" @click="cancel">取消</button>
+      </div>
     </div>
   </div>
 </template>
@@ -98,6 +113,13 @@ const cancel = () => {
   border-radius: 4px;
   overflow: hidden;
   min-height: 200px;
+}
+.editor-addons {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-right: auto;
 }
 .editor-actions {
   display: flex;
