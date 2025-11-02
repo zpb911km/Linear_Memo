@@ -147,6 +147,7 @@ async function addCard(cardData: Omit<Card, 'id'>): Promise<any> {
 
 // 更新卡片
 async function updateCard(cardId: number, cardData: Partial<Card>): Promise<any> {
+  console.log(`id: ${cardId}, data: ${JSON.stringify(cardData)}`)
   return callApiWithFeedback(
     () => httpClient.put<any>(`/cards/${cardId}`, cardData),
     '卡片更新成功',
@@ -252,7 +253,12 @@ async function fetchArrangement(deckId: number): Promise<Arrangement> {
 
 //账户管理api
 // 注册
-async function register(data: {username: string, password: string, email?:string, code:string}): Promise<AccessUserInfo> {
+async function register(data: {
+  username: string
+  password: string
+  email?: string
+  code: string
+}): Promise<AccessUserInfo> {
   return callApiWithFeedback(
     () => httpClient.post<{ message: string; token: string }>('/register', data),
     '注册成功',
@@ -261,7 +267,7 @@ async function register(data: {username: string, password: string, email?:string
 }
 
 // 登录
-async function login(data: {username: string, password: string}): Promise<AccessUserInfo> {
+async function login(data: { username: string; password: string }): Promise<AccessUserInfo> {
   return callApiWithFeedback(
     () => httpClient.post<{ message: string; token: string }>('/login', data),
     '登录成功',
@@ -271,19 +277,155 @@ async function login(data: {username: string, password: string}): Promise<Access
 
 // 其他
 // 查单词
-async function queryDict(word: string): Promise<{front: string, back: string}> {
+async function queryDict(word: string): Promise<{ front: string; back: string }> {
   const url = `https://v2.xxapi.cn/api/englishwords?word=${word}`
   const response = await fetch(url)
-  const content = await response.json().then(data => data.data)
+  const data = await response.json()
+  const content = data.data
   console.log(content)
-  const front = content.word
-  const translations = content.translations
-  let back = '<ul>';
-  for (let i = 0; i < translations.length; i++) {
-    back += `<li>${translations[i].pos} ${translations[i].tran_cn}</li>`
+  if (!content) {
+    const front = await data.msg
+    return { front, back: '' }
   }
-  back += '</ul>';
-  return {front, back}
+  const front = `
+  <div class="word-card">
+    <h1 class="word">${content.word}</h1>
+    <div class="pronunciation">
+      <span class="uk"><button onclick="new Audio('${content.ukspeech}').play()">英</button> [${content.ukphone}]
+      <span class="us"><button onclick="new Audio('${content.usspeech}').play()">美</button> [${content.usphone}]
+    </div>
+  </div>`
+
+  const back = `<div class="word-card">
+  <h1 class="word">${content.word}</h1>
+  
+
+  <!-- 词义翻译（按词性） -->
+  <div class="translations">
+    <h2>词义</h2>
+    ${content.translations
+      .map(
+        (t: { pos: any; tran_cn: any }) => `
+      <div class="translation-item">
+        <strong>${t.pos}.</strong> ${t.tran_cn}
+      </div>
+    `,
+      )
+      .join('')}
+  </div>
+
+  <!-- 同根词 -->
+  <div class="related-words">
+    <h2>同根词</h2>
+    ${content.relWords
+      .map(
+        (r: { Pos: any; Hwds: any[] }) => `
+      <div class="relword-group">
+        <strong>${r.Pos}.</strong>
+        <ul>
+          ${r.Hwds.map((h: { hwd: any; tran: string }) => `<li><strong>${h.hwd}</strong> — ${h.tran.trim()}</li>`).join('')}
+        </ul>
+      </div>
+    `,
+      )
+      .join('')}
+  </div>
+
+  <!-- 例句 -->
+  <div class="sentences">
+    <h2>例句</h2>
+    <ul>
+      ${content.sentences
+        .map(
+          (s: { s_content: any; s_cn: any }) => `
+        <li>
+          <div class="sentence-en">${s.s_content}</div>
+          <div class="sentence-cn">${s.s_cn}</div>
+        </li>
+      `,
+        )
+        .join('')}
+    </ul>
+  </div>
+
+  <!-- 同义词 -->
+  <div class="synonyms">
+    <h2>同义词</h2>
+    ${content.synonyms
+      .map(
+        (s: { pos: any; tran: any; Hwds: any[] }) => `
+      <div class="synonym-group">
+        <strong>${s.pos}.</strong> ${s.tran}
+        <ul>
+          ${s.Hwds.map((h: { word: any }) => `<li>${h.word}</li>`).join('')}
+        </ul>
+      </div>
+    `,
+      )
+      .join('')}
+  </div>
+
+  <!-- 短语 -->
+  <div class="phrases">
+    <h2>常用短语</h2>
+    <ul>
+      ${content.phrases
+        .map(
+          (p: { p_content: any; p_cn: any }) => `
+        <li><strong>${p.p_content}</strong> — ${p.p_cn}</li>
+      `,
+        )
+        .join('')}
+    </ul>
+  </div>
+</div>
+
+<style>
+  .word-card {
+    background-color: transparent;
+  }
+  .word {
+    font-size: 2.2em;
+    margin-bottom: 10px;
+  }
+  .pronunciation {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+  }
+  .pronunciation span {
+    display: block;
+    margin: 4px 0;
+  }
+  .translations, .phrases, .sentences, .synonyms, .related-words {
+    margin-bottom: 25px;
+  }
+  h2 {
+    font-size: 1.4em;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+    margin-top: 20px;
+  }
+  .translation-item, .synonym-group, .relword-group {
+    margin-bottom: 10px;
+  }
+  ul {
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 6px;
+  }
+  .sentence-en {
+    font-style: italic;
+  }
+  .sentence-cn {
+    margin-top: 2px;
+  }
+  audio {
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+</style>`
+  return { front, back }
 }
 
 // 导出API状态创建函数和API函数

@@ -13,7 +13,7 @@ const router = createRouter({
       path: '/review/:deckId',
       name: 'review',
       component: () => import('../views/ReviewView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/review',
@@ -24,19 +24,19 @@ const router = createRouter({
       path: '/decks',
       name: 'decks',
       component: () => import('../views/DeckManagementView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/stats',
       name: 'stats',
       component: () => import('../views/StatisticsView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/settings',
       name: 'settings',
       component: () => import('../views/SettingsView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/login',
@@ -54,7 +54,7 @@ const router = createRouter({
 // 全局前置守卫
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  
+
   // 检查路由是否需要认证
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     // 需要认证但未登录，重定向到登录页

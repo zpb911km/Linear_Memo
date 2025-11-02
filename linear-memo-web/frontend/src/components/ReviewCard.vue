@@ -161,17 +161,17 @@ const feedbackBarColor = computed(() => {
 .card-front-inner,
 .card-back-inner {
   overflow-y: auto;
-  overflow-x: hidden;
+  /* overflow-x: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   word-wrap: break-word;
-  white-space: pre-wrap;
+  white-space: pre-wrap; */
   width: 100%;
   color: var(--color-text);
-  font-size: larger;
+  /* font-size: larger; */
 }
 
 .card-front-inner {

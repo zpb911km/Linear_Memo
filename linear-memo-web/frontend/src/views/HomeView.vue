@@ -13,7 +13,7 @@ const deckDetails = ref<DeckDetail[]>([])
 onMounted(async () => {
   authStore.initializeAuth()
   if (!authStore.isAuthenticated) {
-    return;
+    return
   }
   try {
     const response = await fetchDecks()
@@ -76,7 +76,7 @@ onUnmounted(() => {
                 </ul>
               </div>
               <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link"
-              >复习</router-link
+                >复习</router-link
               >
             </div>
           </div>

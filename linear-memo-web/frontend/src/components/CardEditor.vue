@@ -170,9 +170,9 @@ const closeDialog = () => {
 
       <div class="modal-footer">
         <button class="add-card-btn" @click="addCard">添加卡片</button>
-        <button class="add-card-btn" @click="batchEditCard">批量导出</button>
-        <button class="add-card-btn" @click="batchAddCard">批量导入</button>
-        <!-- TODO -->
+        <!-- <button class="add-card-btn" @click="batchEditCard">批量导出</button>
+        <button class="add-card-btn" @click="batchAddCard">批量导入</button> -->
+        <!-- TODO: 批量导出、批量导入功能 -->
         <div class="save-cancel-actions">
           <button class="save-btn" @click="saveAllCards">保存所有</button>
           <button class="cancel-btn" @click="cancelAllCards">取消</button>
@@ -310,6 +310,8 @@ const closeDialog = () => {
   border: 1px dashed var(--color-border);
   border-radius: 4px;
   color: var(--color-text);
+  height: 200px;
+  overflow-y: auto;
 }
 
 .card-actions {

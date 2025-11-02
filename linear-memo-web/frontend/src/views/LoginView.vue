@@ -13,7 +13,7 @@
             placeholder="请输入用户名或邮箱"
           />
         </div>
-        
+
         <div class="form-group">
           <label for="password">密码:</label>
           <input
@@ -24,12 +24,12 @@
             placeholder="请输入密码"
           />
         </div>
-        
+
         <button type="submit" class="auth-button" :disabled="loading">
           {{ loading ? '登录中...' : '登录' }}
         </button>
       </form>
-      
+
       <div class="auth-footer">
         <p>
           还没有账户？
@@ -52,7 +52,7 @@ const notificationStore = useNotificationStore()
 
 const loginForm = ref({
   username: '',
-  password: ''
+  password: '',
 })
 
 const loading = ref(false)
@@ -64,11 +64,11 @@ const handleLogin = async () => {
   }
 
   loading.value = true
-  
+
   try {
     const response = await login({
       username: loginForm.value.username,
-      password: loginForm.value.password
+      password: loginForm.value.password,
     })
     if (!response || !response.access_token) {
       notificationStore.showError('用户名或密码错误')
@@ -77,7 +77,7 @@ const handleLogin = async () => {
     localStorage.setItem('authToken', response.access_token)
     localStorage.setItem('refreshToken', response.refresh_token)
     httpClient.setDefaultHeaders({
-      'Authorization': `Bearer ${response.access_token}`
+      Authorization: `Bearer ${response.access_token}`,
     })
     router.push('/')
   } catch (error: any) {

@@ -15,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = savedToken
       isAuthenticated.value = true
       httpClient.setDefaultHeaders({
-        'Authorization': `Bearer ${savedToken}`
+        Authorization: `Bearer ${savedToken}`,
       })
       // 加载用户信息
       loadUserInfo()
@@ -27,14 +27,14 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = authToken
     user.value = userData
     isAuthenticated.value = true
-    
+
     // 保存到localStorage
     localStorage.setItem('authToken', authToken)
     localStorage.setItem('refreshToken', refreshToken)
-    
+
     // 设置HTTP客户端默认头部
     httpClient.setDefaultHeaders({
-      'Authorization': `Bearer ${authToken}`
+      Authorization: `Bearer ${authToken}`,
     })
   }
 
@@ -43,11 +43,11 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     user.value = null
     isAuthenticated.value = false
-    
+
     // 从localStorage移除
     localStorage.removeItem('authToken')
     localStorage.removeItem('refreshToken')
-    
+
     // 清除HTTP客户端认证头部
     const headers = httpClient.headers
     delete headers['Authorization']
@@ -58,7 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loadUserInfo = async () => {
     try {
       if (!token.value) return
-      
+
       const response = await httpClient.get<{ user: User }>('/api/user/profile')
       if (response.data?.user) {
         user.value = response.data.user
@@ -78,7 +78,9 @@ export const useAuthStore = defineStore('auth', () => {
       //   'Authorization': `Bearer ${refreshToken}`
       // })
       if (!refreshToken) return
-      const response = await httpClient.post<{ access_token: string }>('/refresh', '', {'Authorization': `Bearer ${refreshToken}`})
+      const response = await httpClient.post<{ access_token: string }>('/refresh', '', {
+        Authorization: `Bearer ${refreshToken}`,
+      })
       if (response.data?.access_token) {
         token.value = response.data.access_token
         // 刷新HTTP客户端认证头部
@@ -86,12 +88,11 @@ export const useAuthStore = defineStore('auth', () => {
         headers['Authorization'] = `Bearer ${token.value}`
         localStorage.setItem('authToken', token.value)
       }
-      
     } catch (error) {
       console.error('Failed to refresh token:', error)
       // 如果刷新令牌失败，清除认证状态
       clearAuth()
-    } 
+    }
     // finally {
     //   const access_token = localStorage.getItem('authToken')
     //   httpClient.setDefaultHeaders({
@@ -114,6 +115,6 @@ export const useAuthStore = defineStore('auth', () => {
     loadUserInfo,
     logout,
     initializeAuth,
-    refreshToken
+    refreshToken,
   }
 })

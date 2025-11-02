@@ -1,4 +1,4 @@
-import router from "@/router"
+import router from '@/router'
 
 // 自定义HTTP客户端
 class HttpClient {
@@ -10,7 +10,7 @@ class HttpClient {
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     }
-    
+
     // 如果有保存的认证令牌，自动添加到默认头部
     const token = localStorage.getItem('authToken')
     if (token) {
@@ -45,9 +45,10 @@ class HttpClient {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = this.buildUrl(endpoint)
     const token = localStorage.getItem('authToken')
-    if (token) {  // 如果有保存的认证令牌，添加到请求头部
+    if (token) {
+      // 如果有保存的认证令牌，添加到请求头部
       this.setDefaultHeaders({
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       })
     }
     const config: RequestInit = {
@@ -66,11 +67,7 @@ class HttpClient {
           localStorage.removeItem('authToken')
           router.push('/login')
         }
-        throw new HttpError(
-          `HTTP error! status: ${response.status}`,
-          response.status,
-          text,
-        )
+        throw new HttpError(`HTTP error! status: ${response.status}`, response.status, text)
       }
 
       // 尝试解析JSON
@@ -154,7 +151,6 @@ interface ApiResponse<T> {
 // 创建默认的HTTP客户端实例
 // const httpClient = new HttpClient('http://103.151.217.252:65533/api')
 const httpClient = new HttpClient('http://localhost:65533/api')
-
 
 export type { ApiResponse, HttpError }
 export { HttpClient, httpClient }

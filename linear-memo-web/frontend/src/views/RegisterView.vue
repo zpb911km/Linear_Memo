@@ -15,7 +15,7 @@
             maxlength="50"
           />
         </div>
-        
+
         <div class="form-group">
           <label for="email">邮箱 (可选):</label>
           <input
@@ -26,7 +26,7 @@
             maxlength="120"
           />
         </div>
-        
+
         <div class="form-group">
           <label for="password">密码:</label>
           <input
@@ -38,7 +38,7 @@
             minlength="6"
           />
         </div>
-        
+
         <div class="form-group">
           <label for="confirmPassword">确认密码:</label>
           <input
@@ -59,12 +59,12 @@
             maxlength="6"
           />
         </div>
-        
+
         <button type="submit" class="auth-button" :disabled="loading">
           {{ loading ? '注册中...' : '注册' }}
         </button>
       </form>
-      
+
       <div class="auth-footer">
         <p>
           已有账户？
@@ -102,17 +102,17 @@ const handleRegister = async () => {
     notificationStore.showError('用户名和密码是必填项')
     return
   }
-  
+
   if (registerForm.password.length < 6) {
     notificationStore.showError('密码长度至少为6位')
     return
   }
-  
+
   if (registerForm.password !== confirmPassword.value) {
     notificationStore.showError('两次输入的密码不一致')
     return
   }
-  
+
   if (registerForm.email && !isValidEmail(registerForm.email)) {
     notificationStore.showError('请输入有效的邮箱地址')
     return
@@ -124,18 +124,18 @@ const handleRegister = async () => {
   }
 
   loading.value = true
-  
+
   try {
     const requestData: any = {
       username: registerForm.username,
       password: registerForm.password,
-      code: registerForm.code
+      code: registerForm.code,
     }
-    
+
     if (registerForm.email) {
       requestData.email = registerForm.email
     }
-    
+
     const response = await register(requestData)
     if (!response || !response.access_token) {
       notificationStore.showError('注册失败!!!')
@@ -143,7 +143,7 @@ const handleRegister = async () => {
     }
     localStorage.setItem('authToken', response.access_token)
     httpClient.setDefaultHeaders({
-      'Authorization': `Bearer ${response.access_token}`
+      Authorization: `Bearer ${response.access_token}`,
     })
     router.push('/')
   } catch (error: any) {
