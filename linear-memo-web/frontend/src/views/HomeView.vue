@@ -201,24 +201,24 @@ onUnmounted(() => {
 }
 
 .btn-primary {
-  background-color: rgb(12, 62, 34);
-  color: var(--color-primary);
+  background-color: var(--color-button-primary);
+  color: var(--color-text);
 }
 
 .btn-primary:hover {
-  background-color: #095132;
+  background-color: var(--color-button-primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-secondary {
-  background-color: transparent;
-  color: white;
-  border: 2px solid white;
+  background-color: var(--color-button-secondary);
+  color: var(--color-text);
+  border: 2px solid var(--color-border);
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--color-button-secondary-hover);
   transform: translateY(-2px);
 }
 
