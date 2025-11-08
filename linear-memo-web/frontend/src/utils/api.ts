@@ -128,12 +128,21 @@ async function fetchDeckDetail(deckId: number): Promise<DeckDetail> {
 
 // 卡片管理API
 // 获取卡组的所有卡片
-async function fetchCards(deckId: number): Promise<Card[]> {
+async function fetchCards(deckId: number, page: number, per_page: number): Promise<Card[]> {
   return callApiWithFeedback(
-    () => httpClient.get<Card[]>(`/cards?deck_id=${deckId}`),
+    () => httpClient.get<Card[]>(`/cards?deck_id=${deckId}&page=${page}&per_page=${per_page}`),
     '卡片列表获取成功',
     '获取卡片列表失败',
   ) as unknown as Promise<Card[]>
+}
+
+// 获取分页页数和卡片数
+async function fetchPageCountAndCardCount(deckId: number, per_page: number): Promise<{ pages: number; count: number }> {
+  return callApiWithFeedback(
+    () => httpClient.get<{ pages: number; count: number }>(`/cards/page_count?deck_id=${deckId}&per_page=${per_page}`),
+    '分页页数和卡片数获取成功',
+    '获取分页页数和卡片数失败',
+  ) as Promise<{ pages: number; count: number }>
 }
 
 // 添加卡片
@@ -447,6 +456,7 @@ export {
   searchCards,
   fetchNextCard,
   reviewAndNextCard,
+  fetchPageCountAndCardCount,
   // 安排管理
   createArrangement,
   updateArrangement,

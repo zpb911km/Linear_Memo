@@ -200,21 +200,21 @@ const isValidEmail = (email: string): boolean => {
   padding: 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: 4px;
-  background-color: var(--color-input-background);
+  background-color: var(--color-background);
   color: var(--color-text);
   font-size: 1rem;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--color-button-primary);
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
 .auth-button {
   width: 100%;
   padding: 0.75rem;
-  background-color: var(--color-primary);
+  background-color: var(--color-button-primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -226,7 +226,7 @@ const isValidEmail = (email: string): boolean => {
 }
 
 .auth-button:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
+  background-color: var(--color-button-primary-hover);
 }
 
 .auth-button:disabled {
@@ -240,7 +240,7 @@ const isValidEmail = (email: string): boolean => {
 }
 
 .auth-footer a {
-  color: var(--color-primary);
+  color: var(--color-button-primary);
   text-decoration: none;
 }
 

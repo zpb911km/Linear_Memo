@@ -71,14 +71,36 @@ const feedbackBarColor = computed(() => {
   const green = Math.round(255 * (feedback.value / 100))
   return `linear-gradient(to right, rgb(${red}, 0, ${green}), rgb(${red}, ${green}, 50))`
 })
+
+const addDefaultStyle = (html: string) => {
+  if (!html) return ''
+  if (html.includes('<div') || html.includes('style=')) {
+    return html
+  }
+  return `<div class="card-content">${html}</div>
+  <style>
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    font-size: 3rem;
+    height: 100%;
+  }
+  </style>`
+}
+
 </script>
 <template>
   <div class="review-card" :class="{ flipped: fliped }">
     <div class="card-front" @click="fliped = !fliped">
-      <div class="card-front-inner" v-html="props.card.front"></div>
+      <div class="card-front-inner" v-html="addDefaultStyle(props.card.front)"></div>
     </div>
     <div class="card-back" @click="fliped = !fliped">
-      <div class="card-back-inner" v-html="props.card.back"></div>
+      <div class="card-back-inner" v-html="addDefaultStyle(props.card.back)"></div>
       <div class="feedback-container">
         <div
           class="feedback-bar-container"

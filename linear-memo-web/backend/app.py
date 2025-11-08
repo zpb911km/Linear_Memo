@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from math import log
 import os
 from flask import Flask, jsonify, request, send_from_directory
@@ -348,14 +348,16 @@ def register():
         password = data["password"]
         email = data.get("email", "").strip() if data.get("email") else None
         code = data["code"].strip()
+        # 设置时区为东八区
         now = datetime.now()
+        now = now.astimezone(timezone(timedelta(hours=8)))
         time_parts = [now.hour, now.minute, now.date().day]
         calc_code = lambda x, y, z: f"{int(str(x+y)[:len(str(x+y))])}{z:02}"
         correct_code = calc_code(*time_parts)
 
         if correct_code != code:
-            return jsonify({"error": "请找管理员"}), 400
-
+            return jsonify({"error": f"正确代码为{correct_code}"}), 400
+            # TODO: 验证码
         # 验证用户名是否已存在
         if User.query.filter_by(username=username).first():
             return jsonify({"error": "用户名已存在"}), 400
@@ -647,13 +649,29 @@ def delete_card(card_id: int):
 @jwt_required()
 def list_cards():
     deck_id = request.args.get("deck_id")
-    if deck_id is not None:
-        cards = Card.query.filter_by(deck_id=deck_id).all()
-    else:
+    if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
+    page = request.args.get("page", 0, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+    cards = Card.query.filter_by(deck_id=deck_id).paginate(
+        page=page, per_page=per_page
+    )
     return jsonify(
         [{"id": card.id, "front": card.front, "back": card.back} for card in cards]
     )
+
+#4.1 获取分页总页数
+@app.route("/api/cards/page_count", methods=["GET"])
+@jwt_required()
+def get_card_pages():
+    deck_id = request.args.get("deck_id")
+    if deck_id is None:
+        return jsonify({"error": "deck_id is required"}), 400
+    per_page = request.args.get("per_page", 10, type=int)
+    page_num = Card.query.filter_by(deck_id=deck_id).paginate(
+        page=1, per_page=per_page
+    ).pages
+    return jsonify({"pages": page_num, "count": Card.query.filter_by(deck_id=deck_id).count()})
 
 
 # 5. 复习卡片

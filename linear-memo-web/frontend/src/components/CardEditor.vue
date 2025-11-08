@@ -18,13 +18,31 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  page: {
+    type: Number,
+    required: true,
+  },
+  per_page: {
+    type: Number,
+    required: true,
+  },
+  total_page: {
+    type: Number,
+    required: true,
+  },
+  cards_count: {
+    type: Number,
+    required: true,
+  },
 })
+
 const emit = defineEmits<{
   (e: 'update', cards: Card[]): void
   (e: 'add', card: Card[]): void
   (e: 'delete', card: Card[]): void
   (e: 'cancel'): void
   (e: 'update:visible', visible: boolean): void
+  (e: 'changePage', page: number): void
 }>()
 
 // 创建本地副本以进行编辑
@@ -35,6 +53,11 @@ const addedCards = ref<Card[]>([])
 const editingCardIndex = ref<number | null>(null)
 const keyword = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
+
+// 监听props.cards的变化，更新本地副本
+watch(() => props.cards, (newCards) => {
+  localCards.value = JSON.parse(JSON.stringify(newCards))
+}, { deep: true })
 
 // watch(keyword, () => {
 //   filterCards()
@@ -109,6 +132,60 @@ const saveAllCards = () => {
   deletedCards.value = []
   editingCardIndex.value = null
   emit('update:visible', false)
+}
+
+const nextPage = () => {
+  if (addedCards.value.length > 0) {
+    // console.log('save added cards', addedCards.value)
+    emit('add', addedCards.value)
+  }
+  for (const card of editedCards.value) {
+    if (card.id === -1) {
+      editedCards.value.splice(editedCards.value.indexOf(card), 1)
+    }
+  }
+  if (editedCards.value.length > 0) {
+    // console.log('save edited cards', editedCards.value)
+    emit('update', editedCards.value)
+  }
+  if (deletedCards.value.length > 0) {
+    // console.log('delete cards', deletedCards.value)
+    emit('delete', deletedCards.value)
+  }
+  // 重置本地状态
+  addedCards.value = []
+  editedCards.value = []
+  deletedCards.value = []
+  editingCardIndex.value = null
+  // 发送翻页事件
+  emit('changePage', props.page + 1)
+}
+
+const prevPage = () => {
+  if (addedCards.value.length > 0) {
+    // console.log('save added cards', addedCards.value)
+    emit('add', addedCards.value)
+  }
+  for (const card of editedCards.value) {
+    if (card.id === -1) {
+      editedCards.value.splice(editedCards.value.indexOf(card), 1)
+    }
+  }
+  if (editedCards.value.length > 0) {
+    // console.log('save edited cards', editedCards.value)
+    emit('update', editedCards.value)
+  }
+  if (deletedCards.value.length > 0) {
+    // console.log('delete cards', deletedCards.value)
+    emit('delete', deletedCards.value)
+  }
+  // 重置本地状态
+  addedCards.value = []
+  editedCards.value = []
+  deletedCards.value = []
+  editingCardIndex.value = null
+  // 发送翻页事件
+  emit('changePage', props.page - 1)
 }
 
 // 取消编辑所有卡片
@@ -257,6 +334,7 @@ const importCards = (event: Event) => {
             class="card-item"
             :class="{ editing: editingCardIndex === index }"
           >
+            <span>{{ card.id }}</span>
             <div v-if="editingCardIndex === index" class="card-edit-mode">
               <CardSideEditor
                 :index="index"
@@ -292,6 +370,10 @@ const importCards = (event: Event) => {
             @change="importCards"
             style="display: none"
           />
+          <span style="width: 5%;"></span>
+          <button class="add-card-btn" @click="prevPage">上一页</button>
+          <button class="add-card-btn" @click="nextPage">下一页</button>
+          <div class="page-info">第{{ page }}页/共{{ total_page }}页</div>
         </div>
         <div class="save-cancel-actions">
           <button class="save-btn" @click="saveAllCards">保存所有</button>
@@ -430,7 +512,7 @@ const importCards = (event: Event) => {
   border: 1px dashed var(--color-border);
   border-radius: 4px;
   color: var(--color-text);
-  height: 200px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
@@ -518,5 +600,10 @@ const importCards = (event: Event) => {
 
 .cancel-btn:hover {
   background-color: var(--color-button-secondary-hover);
+}
+
+.page-info {
+  font-size: 1.2rem;
+  color: var(--color-text-secondary);
 }
 </style>

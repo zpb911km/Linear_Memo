@@ -11,6 +11,7 @@ import {
   updateCard,
   deleteCard,
   fetchArrangement,
+  fetchPageCountAndCardCount,
 } from '../utils/api'
 import type { Card, Deck } from '@/utils/types'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -33,6 +34,12 @@ const showDeckEditor = ref(false)
 // 卡片列表
 const cards = ref<Card[]>([])
 
+// 活动卡组变量
+const page = ref(1)
+const per_page = ref(10)
+const total_page = ref(1)
+const cards_count = ref(0)
+
 // 获取所有卡组
 const loadDecks = async () => {
   const response = await fetchDecks()
@@ -43,7 +50,10 @@ const loadDecks = async () => {
 
 // 获取卡组的卡片
 const loadCardsForDeck = async (deckId: number) => {
-  const response = await fetchCards(deckId)
+  const { pages, count } = await fetchPageCountAndCardCount(deckId, per_page.value)
+  total_page.value = pages
+  cards_count.value = count
+  const response = await fetchCards(deckId, page.value, per_page.value)
   if (response && response) {
     cards.value = response as unknown as Card[]
   }
@@ -168,6 +178,11 @@ const closeCardEditor = () => {
   cards.value = []
 }
 
+const changePage = (target_page: number) => {
+  page.value = target_page
+  loadCardsForDeck(editingDeck.value!.id)
+}
+
 // 组件挂载时加载数据
 onMounted(() => {
   loadDecks()
@@ -199,11 +214,16 @@ onMounted(() => {
             :cards="cards"
             :deck="editingDeck"
             :visible="showCardEditor"
+            :page="page"
+            :per_page="per_page"
+            :total_page="total_page"
+            :cards_count="cards_count"
             @add="addCards"
             @update="updateCards"
             @delete="removeCards"
             @cancel="closeCardEditor"
             @close="closeCardEditor"
+            @change-page="changePage"
           />
         </div>
       </div>

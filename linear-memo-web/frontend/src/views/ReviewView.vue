@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  fetchCards,
   fetchDeckDetail,
   fetchNextCard,
   fetchReviewCards,
@@ -32,6 +31,7 @@ const handleReview = async (feedback: number) => {
       currentCard.value!.id,
       feedback,
     )
+    // console.log(next_card_info)
     if (next_card_info === null) {
       router.push('/')
       return

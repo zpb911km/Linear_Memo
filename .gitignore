@@ -8,3 +8,6 @@ db.prg
 __pycache__/
 linear-memo-web/backend/visualize_db.py
 linear-memo-web/backend/instance/linear_memo_old.db
+word_cards.xlsx
+word_cards_old.xlsx
+dict.py

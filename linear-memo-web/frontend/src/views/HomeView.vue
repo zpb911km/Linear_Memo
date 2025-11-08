@@ -18,7 +18,7 @@ onMounted(async () => {
   try {
     const response = await fetchDecks()
     if (response) {
-      console.log(response)
+      // console.log(response)
       for (const deck of response) {
         const detail = await fetchDeckDetail(deck.id)
         deckDetails.value.push(detail as DeckDetail)
