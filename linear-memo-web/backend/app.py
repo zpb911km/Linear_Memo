@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from math import log
 import os
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import (
@@ -14,6 +14,8 @@ from flask_jwt_extended import (
 from sqlalchemy.sql import func, or_
 from typing import List
 from werkzeug.security import generate_password_hash, check_password_hash
+import pandas as pd
+from io import BytesIO
 
 
 app = Flask(__name__)
@@ -660,7 +662,116 @@ def list_cards():
         [{"id": card.id, "front": card.front, "back": card.back} for card in cards]
     )
 
-#4.1 获取分页总页数
+# 4.1 批量导出卡组的卡片
+@app.route("/api/cards/export", methods=["GET"])
+@jwt_required()
+def export_cards():
+    deck_id = request.args.get("deck_id")
+    if deck_id is None:
+        return jsonify({"error": "deck_id is required"}), 400
+    
+    # 获取当前用户ID
+    user_id = get_jwt_identity()
+    
+    # 验证用户是否有权限访问该卡组
+    deck = Deck.query.filter_by(id=deck_id, user_id=user_id).first()
+    if deck is None:
+        return jsonify({"error": "Deck not found or access denied"}), 404
+    
+    # 获取卡组的所有卡片
+    cards = Card.query.filter_by(deck_id=deck_id).all()
+    
+    # 准备导出数据
+    export_data = [{
+        "正面": card.front,
+        "反面": card.back
+    } for card in cards]
+    
+    # 创建DataFrame并导出为Excel
+    df = pd.DataFrame(export_data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Cards')
+    output.seek(0)
+    
+    # 返回Excel文件
+    return send_file(output, as_attachment=True, download_name=f'deck_{deck_id}_cards.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+# 4.2 批量导入卡片到卡组
+@app.route("/api/cards/import", methods=["POST"])
+@jwt_required()
+def import_cards():
+    # deck_id = request.args.get("deck_id")
+    # if deck_id is None:
+    #     return jsonify({"error": "deck_id is required"}), 400
+    
+    # 获取当前用户ID
+    user_id = get_jwt_identity()
+
+    deck_id = request.form.get("deck_id")
+    if deck_id is None:
+        return jsonify({"error": "deck_id is required"}), 400
+    
+    # 验证用户是否有权限访问该卡组
+    deck = Deck.query.filter_by(id=deck_id, user_id=user_id).first()
+    if deck is None:
+        return jsonify({"error": "Deck not found or access denied"}), 404
+    
+    # print(request.json)
+    
+    # 检查是否有上传文件
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided A"}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No file selected B"}), 400
+    
+    # 读取Excel文件
+    try:
+        df = pd.read_excel(file)
+        
+        # 验证必要的列是否存在
+        if '正面' not in df.columns and 'Front' not in df.columns:
+            return jsonify({"error": "Missing '正面' or 'Front' column"}), 400
+        if '反面' not in df.columns and 'Back' not in df.columns:
+            return jsonify({"error": "Missing '反面' or 'Back' column"}), 400
+        
+        # 处理列名
+        front_col = '正面' if '正面' in df.columns else 'Front'
+        back_col = '反面' if '反面' in df.columns else 'Back'
+        
+        # 导入卡片
+        imported_cards = []
+        for index, row in df.iterrows():
+            front = row[front_col]
+            back = row[back_col]
+            
+            # 跳过空行
+            if pd.isna(front) or pd.isna(back) or not str(front).strip() or not str(back).strip():
+                continue
+            
+            # 创建新卡片
+            new_card = Card(deck_id=deck_id, front=str(front), back=str(back), user_id=user_id)
+            db.session.add(new_card)
+            imported_cards.append({
+                "front": str(front),
+                "back": str(back)
+            })
+        
+        # 提交更改
+        db.session.commit()
+        
+        return jsonify({
+            "message": f"Successfully imported {len(imported_cards)} cards",
+            "imported_cards": imported_cards
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to import cards: {str(e)}"}), 500
+
+# 4.3 获取分页总页数
 @app.route("/api/cards/page_count", methods=["GET"])
 @jwt_required()
 def get_card_pages():

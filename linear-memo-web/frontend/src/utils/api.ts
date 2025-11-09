@@ -220,6 +220,84 @@ async function searchCards(deckId: number, keyword: string): Promise<Card[]> {
   ) as unknown as Promise<Card[]>
 }
 
+// 批量导出卡片
+async function exportCards(deckId: number): Promise<Blob> {
+  // 使用httpClient处理Blob响应
+  const token = localStorage.getItem('authToken')
+  
+  const config: RequestInit = {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }
+  
+  const response = await fetch(`${httpClient.url || ''}/cards/export?deck_id=${deckId}`, config)
+  
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text || '导出失败')
+  }
+  
+  return await response.blob()
+}
+
+// 批量导入卡片
+async function importCards(deckId: number, file: File): Promise<Card[]> {
+  // 使用原生fetch API处理文件上传以确保正确的multipart/form-data格式
+  const notificationStore = useNotificationStore()
+  
+  // 显示进度条
+  notificationStore.showProgressBar()
+  
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('deck_id', deckId.toString())
+    
+    const token = localStorage.getItem('authToken')
+    
+    const response = await fetch(`${httpClient.url || ''}/cards/import`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${token}`
+        // 注意：不设置Content-Type，让浏览器自动设置
+      }
+    })
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      try {
+        const errorData = JSON.parse(errorText)
+        throw new Error(errorData.error || '导入失败')
+      } catch {
+        throw new Error(`导入失败: ${errorText}`)
+      }
+    }
+    
+    const result = await response.json()
+    
+    // 隐藏进度条
+    notificationStore.hideProgressBar()
+    
+    // 显示成功消息
+    notificationStore.showSuccess('卡片导入成功')
+    
+    // 返回导入的卡片数据
+    return result.imported_cards || []
+  } catch (error: any) {
+    // 隐藏进度条
+    notificationStore.hideProgressBar()
+    
+    // 显示错误消息
+    const message = error.message || '卡片导入失败'
+    notificationStore.showError(message)
+    
+    throw error
+  }
+}
+
 // 安排管理API
 // 创建安排
 async function createArrangement(arrangementData: Omit<Arrangement, 'id'>): Promise<any> {
@@ -457,6 +535,9 @@ export {
   fetchNextCard,
   reviewAndNextCard,
   fetchPageCountAndCardCount,
+  // 卡片批量导入导出
+  exportCards,
+  importCards,
   // 安排管理
   createArrangement,
   updateArrangement,

@@ -2,7 +2,7 @@
 import { ref, watch, type PropType } from 'vue'
 import CardSideEditor from './CardSideEditor.vue'
 import type { Card, Deck } from '@/utils/types'
-import { searchCards } from '@/utils/api'
+import { searchCards, exportCards as apiExportCards, importCards as apiImportCards } from '@/utils/api'
 import * as XLSX from 'xlsx'
 
 const props = defineProps({
@@ -202,32 +202,24 @@ const closeDialog = () => {
 }
 
 // 导出卡片为Excel文件
-const exportCards = () => {
-  // 创建工作簿
-  const wb = XLSX.utils.book_new()
-  
-  // 准备导出数据
-  const exportData = localCards.value.map(card => ({
-    '正面': card.front,
-    '反面': card.back
-  }))
-  
-  // 创建工作表
-  const ws = XLSX.utils.json_to_sheet(exportData)
-  
-  // 设置列宽
-  const colWidths = [
-    { wch: 30 }, // 正面列宽度
-    { wch: 30 }  // 反面列宽度
-  ]
-  ws['!cols'] = colWidths
-  
-  // 将工作表添加到工作簿
-  XLSX.utils.book_append_sheet(wb, ws, 'Cards')
-  
-  // 导出文件
-  const fileName = `${props.deck.name}_cards.xlsx`
-  XLSX.writeFile(wb, fileName)
+const exportCards = async () => {
+  try {
+    // 调用后端API导出卡片
+    const blob = await apiExportCards(props.deck.id)
+    
+    // 创建下载链接
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${props.deck.name}_cards.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('导出失败:', error)
+    // 这里可以添加错误提示
+  }
 }
 
 // 触发文件选择器
@@ -243,72 +235,31 @@ const pureRawText = (text: string) => {
 }
 
 // 从Excel文件导入卡片
-const importCards = (event: Event) => {
+const importCards = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   
   if (!file) return
   
-  // 读取文件
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const data = new Uint8Array(e.target?.result as ArrayBuffer)
+  try {
+    // 调用后端API导入卡片
+    const importedCards = await apiImportCards(props.deck.id, file)
     
-    // 解析Excel文件
-    const workbook = XLSX.read(data, { type: 'array' })
-    
-    // 获取第一个工作表
-    const firstSheetName = workbook.SheetNames[0]
-    const worksheet = workbook.Sheets[firstSheetName]
-    
-    // 转换为JSON格式
-    const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet)
-    
-    // 处理导入的数据
-    jsonData.forEach(row => {
-      const front = row['正面'] || row['Front'] || ''
-      const back = row['反面'] || row['Back'] || ''
-      
-      if (front && back) {
-        // 检查是否已存在相同front或back的卡片
-        const existingIndex = localCards.value.findIndex(
-          card => card.front === front || card.back === back  // 或关系
-        )
-        
-        if (existingIndex !== -1) {
-          // 如果已存在，则覆盖
-          if (
-            pureRawText(localCards.value[existingIndex].front) !== pureRawText(front) ||
-            pureRawText(localCards.value[existingIndex].back) !== pureRawText(back)
-          ) {
-            localCards.value[existingIndex] = {
-              ...localCards.value[existingIndex],
-              front,
-              back
-            }
-            editedCards.value.push(localCards.value[existingIndex])
-          }
-        } else {
-          // 如果不存在，则新建卡片
-          const newCard: Card = {
-            id: -1, // 新卡片ID设为-1
-            deck_id: props.deck.id,
-            front,
-            back
-          }
-          localCards.value.push(newCard)
-          addedCards.value.push(newCard)
-        }
-      }
-    })
+    // 更新本地卡片列表
+    // 这里假设后端返回的是成功导入的卡片列表
+    // 实际实现可能需要根据后端API的返回格式进行调整
+    localCards.value = [...localCards.value, ...importedCards]
     
     // 清空文件输入框
     if (target) {
       target.value = ''
     }
+    
+    // 这里可以添加成功提示
+  } catch (error) {
+    console.error('导入失败:', error)
+    // 这里可以添加错误提示
   }
-  
-  reader.readAsArrayBuffer(file)
 }
 </script>
 
