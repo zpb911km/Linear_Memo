@@ -137,9 +137,15 @@ async function fetchCards(deckId: number, page: number, per_page: number): Promi
 }
 
 // 获取分页页数和卡片数
-async function fetchPageCountAndCardCount(deckId: number, per_page: number): Promise<{ pages: number; count: number }> {
+async function fetchPageCountAndCardCount(
+  deckId: number,
+  per_page: number,
+): Promise<{ pages: number; count: number }> {
   return callApiWithFeedback(
-    () => httpClient.get<{ pages: number; count: number }>(`/cards/page_count?deck_id=${deckId}&per_page=${per_page}`),
+    () =>
+      httpClient.get<{ pages: number; count: number }>(
+        `/cards/page_count?deck_id=${deckId}&per_page=${per_page}`,
+      ),
     '分页页数和卡片数获取成功',
     '获取分页页数和卡片数失败',
   ) as Promise<{ pages: number; count: number }>
@@ -224,21 +230,21 @@ async function searchCards(deckId: number, keyword: string): Promise<Card[]> {
 async function exportCards(deckId: number): Promise<Blob> {
   // 使用httpClient处理Blob响应
   const token = localStorage.getItem('authToken')
-  
+
   const config: RequestInit = {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   }
-  
+
   const response = await fetch(`${httpClient.url || ''}/cards/export?deck_id=${deckId}`, config)
-  
+
   if (!response.ok) {
     const text = await response.text()
     throw new Error(text || '导出失败')
   }
-  
+
   return await response.blob()
 }
 
@@ -246,26 +252,26 @@ async function exportCards(deckId: number): Promise<Blob> {
 async function importCards(deckId: number, file: File): Promise<Card[]> {
   // 使用原生fetch API处理文件上传以确保正确的multipart/form-data格式
   const notificationStore = useNotificationStore()
-  
+
   // 显示进度条
   notificationStore.showProgressBar()
-  
+
   try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('deck_id', deckId.toString())
-    
+
     const token = localStorage.getItem('authToken')
-    
+
     const response = await fetch(`${httpClient.url || ''}/cards/import`, {
       method: 'POST',
       body: formData,
       headers: {
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
         // 注意：不设置Content-Type，让浏览器自动设置
-      }
+      },
     })
-    
+
     if (!response.ok) {
       const errorText = await response.text()
       try {
@@ -275,25 +281,25 @@ async function importCards(deckId: number, file: File): Promise<Card[]> {
         throw new Error(`导入失败: ${errorText}`)
       }
     }
-    
+
     const result = await response.json()
-    
+
     // 隐藏进度条
     notificationStore.hideProgressBar()
-    
+
     // 显示成功消息
     notificationStore.showSuccess('卡片导入成功')
-    
+
     // 返回导入的卡片数据
     return result.imported_cards || []
   } catch (error: any) {
     // 隐藏进度条
     notificationStore.hideProgressBar()
-    
+
     // 显示错误消息
     const message = error.message || '卡片导入失败'
     notificationStore.showError(message)
-    
+
     throw error
   }
 }

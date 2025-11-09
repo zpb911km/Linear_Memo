@@ -92,7 +92,6 @@ const addDefaultStyle = (html: string) => {
   }
   </style>`
 }
-
 </script>
 <template>
   <div class="review-card" :class="{ flipped: fliped }">

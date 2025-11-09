@@ -50,8 +50,8 @@ class HttpClient {
   async postFile<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
     // 对于文件上传，我们只保留认证头部，移除Content-Type以让浏览器自动设置
     const token = localStorage.getItem('authToken')
-    const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {}
-    
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+
     return this.request<T>(endpoint, {
       method: 'POST',
       headers,
@@ -68,11 +68,11 @@ class HttpClient {
       // 如果有保存的认证令牌，添加到请求头部
       headers['Authorization'] = `Bearer ${token}`
     }
-    
+
     // 如果不是FormData请求，确保Content-Type是application/json
     const isFormDataRequest = options.body instanceof FormData
     let config: RequestInit
-    
+
     if (isFormDataRequest) {
       // FormData请求：使用提供的headers（可能已删除Content-Type）
       config = {
@@ -82,9 +82,10 @@ class HttpClient {
       // 确保Authorization头被正确设置
       if (token && !config.headers) {
         config.headers = { Authorization: `Bearer ${token}` }
-      } else if (token && config.headers && !config.headers['Authorization']) {
-        config.headers = { ...config.headers, Authorization: `Bearer ${token}` }
       }
+      // else if (token && config.headers && !config.headers['Authorization']) {
+      //   config.headers = { ...config.headers, Authorization: `Bearer ${token}` }
+      // }
     } else {
       // 普通请求：使用JSON Content-Type
       config = {
@@ -138,10 +139,10 @@ class HttpClient {
     options: { isFormData?: boolean } = {},
   ): Promise<ApiResponse<T>> {
     const { isFormData = false } = options
-    
+
     let processedBody = body
     let processedHeaders = headers
-    
+
     if (isFormData) {
       // 如果是FormData，不进行JSON序列化，也不设置application/json头部
       processedBody = body
@@ -156,7 +157,7 @@ class HttpClient {
       processedBody = body ? JSON.stringify(body) : undefined
       processedHeaders = headers
     }
-    
+
     return this.request<T>(endpoint, {
       method: 'POST',
       headers: processedHeaders,
