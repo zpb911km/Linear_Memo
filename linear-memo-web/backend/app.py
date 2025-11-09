@@ -743,6 +743,7 @@ def import_cards():
         
         # 导入卡片
         imported_cards = []
+        updated_cards = []
         for index, row in df.iterrows():
             front = row[front_col]
             back = row[back_col]
@@ -750,9 +751,31 @@ def import_cards():
             # 跳过空行
             if pd.isna(front) or pd.isna(back) or not str(front).strip() or not str(back).strip():
                 continue
+
+            same_card = Card.query.filter_by(user_id=int(user_id), deck_id=int(deck_id), front=str(front), back=str(back)).first()
+            if same_card is not None:
+                continue
+            same_front_card = Card.query.filter_by(user_id=int(user_id), deck_id=int(deck_id), front=str(front)).first()
+            if same_front_card is not None:
+                same_front_card.back = str(back)
+                # db.session.commit()
+                updated_cards.append({
+                    "front": str(front),
+                    "back": str(back)
+                })
+                continue
+            same_back_card = Card.query.filter_by(user_id=int(user_id), deck_id=int(deck_id), back=str(back)).first()
+            if same_back_card is not None:
+                same_back_card.front = str(front)
+                # db.session.commit()
+                updated_cards.append({
+                    "front": str(front),
+                    "back": str(back)
+                })
+                continue
             
             # 创建新卡片
-            new_card = Card(deck_id=deck_id, front=str(front), back=str(back), user_id=user_id)
+            new_card = Card(deck_id=int(deck_id), front=str(front), back=str(back), user_id=user_id)
             db.session.add(new_card)
             imported_cards.append({
                 "front": str(front),
@@ -764,7 +787,8 @@ def import_cards():
         
         return jsonify({
             "message": f"Successfully imported {len(imported_cards)} cards",
-            "imported_cards": imported_cards
+            # "imported_cards": imported_cards,
+            # "updated_cards": updated_cards
         }), 200
         
     except Exception as e:

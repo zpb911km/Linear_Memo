@@ -251,19 +251,21 @@ const importCards = async (event: Event) => {
 
   try {
     // 调用后端API导入卡片
-    const importedCards = await apiImportCards(props.deck.id, file)
+    await apiImportCards(props.deck.id, file)
 
     // 更新本地卡片列表
     // 这里假设后端返回的是成功导入的卡片列表
     // 实际实现可能需要根据后端API的返回格式进行调整
-    localCards.value = [...localCards.value, ...importedCards]
+    // localCards.value = [...localCards.value, ...importedCards]
 
-    // 清空文件输入框
-    if (target) {
-      target.value = ''
-    }
+    // // 清空文件输入框
+    // if (target) {
+    //   target.value = ''
+    // }
 
     // 这里可以添加成功提示
+
+    emit('update:visible', false)
   } catch (error) {
     console.error('导入失败:', error)
     // 这里可以添加错误提示

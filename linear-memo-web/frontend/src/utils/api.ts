@@ -288,10 +288,10 @@ async function importCards(deckId: number, file: File): Promise<Card[]> {
     notificationStore.hideProgressBar()
 
     // 显示成功消息
-    notificationStore.showSuccess('卡片导入成功')
+    notificationStore.showSuccess(result.message)
 
     // 返回导入的卡片数据
-    return result.imported_cards || []
+    return result.imported_cards + result.updated_cards || []
   } catch (error: any) {
     // 隐藏进度条
     notificationStore.hideProgressBar()
