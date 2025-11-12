@@ -786,7 +786,7 @@ def import_cards():
         db.session.commit()
         
         return jsonify({
-            "message": f"Successfully imported {len(imported_cards)} cards",
+            "message": f"{len(imported_cards)} cards imported. {len(updated_cards)} cards updated.",
             # "imported_cards": imported_cards,
             # "updated_cards": updated_cards
         }), 200

@@ -7,7 +7,7 @@ User=root
 WorkingDirectory=/root/linear-memo
 Environment="FLASK_APP=app.py"
 Environment="FLASK_ENV=production"
-ExecStart=gunicorn --bind 0.0.0.0:65533 --workers 4 --reload app:app --timeout 60
+ExecStart=gunicorn --bind 0.0.0.0:65533 --workers 4 --reload app:app --timeout 600
 Restart=always
 
 [Install]

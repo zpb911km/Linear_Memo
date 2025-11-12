@@ -183,6 +183,10 @@ const changePage = (target_page: number) => {
   loadCardsForDeck(editingDeck.value!.id)
 }
 
+const visibleChange = (visible: boolean) => {
+  showCardEditor.value = visible
+}
+
 // 组件挂载时加载数据
 onMounted(() => {
   loadDecks()
@@ -224,6 +228,7 @@ onMounted(() => {
             @cancel="closeCardEditor"
             @close="closeCardEditor"
             @change-page="changePage"
+            @update:visible="visibleChange"
           />
         </div>
       </div>
