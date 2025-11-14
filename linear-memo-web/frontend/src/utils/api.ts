@@ -126,6 +126,15 @@ async function fetchDeckDetail(deckId: number): Promise<DeckDetail> {
   ) as unknown as Promise<DeckDetail>
 }
 
+// 卡片分布
+async function fetchDeckDistribution(deckId: number): Promise<number[]> {
+  return callApiWithFeedback(
+    () => httpClient.get<number[]>(`/decks/${deckId}/distribution`),
+    '卡片分布获取成功',
+    '获取卡片分布失败',
+  ) as unknown as Promise<number[]>
+}
+
 // 卡片管理API
 // 获取卡组的所有卡片
 async function fetchCards(deckId: number, page: number, per_page: number): Promise<Card[]> {
@@ -541,6 +550,7 @@ export {
   fetchNextCard,
   reviewAndNextCard,
   fetchPageCountAndCardCount,
+  fetchDeckDistribution,
   // 卡片批量导入导出
   exportCards,
   importCards,

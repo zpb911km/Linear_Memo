@@ -97,15 +97,22 @@ class HttpClient {
     return (async () => {
       const response = await fetch(url, config)
 
-      // 检查响应状态
-      if (response.ok === false) {
-        const text = await response.text()
-        console.log('error:', text)
-        if (text.includes('Token has expired')) {
-          localStorage.removeItem('authToken')
-          router.push('/login')
-        }
-        throw new HttpError(`HTTP error! status: ${response.status}`, response.status, text)
+      // // 检查响应状态
+      // if (response.ok === false) {
+      //   const json_resp = await response.json()
+      //   if (json_resp.msg.includes('Token has expired')) {
+      //     localStorage.removeItem('authToken')
+      //     router.push('/login')
+      //   }
+      //   throw new HttpError(`HTTP error! status: ${response.status}`, response.status, json_resp.msg)
+      // }
+
+      // 401错误：认证令牌失效，跳转到登录页面
+      if (response.status === 401) {
+        localStorage.removeItem('authToken')
+        router.push('/login')
+        console.log('Unauthorized jumped')
+        // throw new HttpError('Unauthorized', response.status, 'Authentication token has expired')
       }
 
       // 尝试解析JSON

@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { httpClient } from '../utils/httpClient'
 import type { User } from '../utils/types'
+import router from '@/router'
+
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -52,6 +54,8 @@ export const useAuthStore = defineStore('auth', () => {
     const headers = httpClient.headers
     delete headers['Authorization']
     httpClient.setDefaultHeaders(headers)
+
+    router.push('/login')
   }
 
   // 加载用户信息

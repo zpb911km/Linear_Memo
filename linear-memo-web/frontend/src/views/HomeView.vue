@@ -2,12 +2,14 @@
 import { useAuthStore } from '../stores/authStore'
 import { onMounted, onUnmounted, ref } from 'vue'
 import type { Deck, DeckDetail } from '@/utils/types'
-import { fetchDecks, fetchDeckDetail } from '@/utils/api'
+import { fetchDecks, fetchDeckDetail, fetchDeckDistribution } from '@/utils/api'
 import router from '@/router'
 
 const authStore = useAuthStore()
 // 定义一个响应式变量来存储获取的牌堆详细信息
 const deckDetails = ref<DeckDetail[]>([])
+// 定义一个响应式变量来存储每个牌堆的复习进度
+const deckDistributions = ref<{ [key: number]: number[] }>({})
 
 // 在组件挂载后获取牌堆列表并获取每个牌堆的详细信息
 onMounted(async () => {
@@ -20,14 +22,49 @@ onMounted(async () => {
     if (response) {
       // console.log(response)
       for (const deck of response) {
-        const detail = await fetchDeckDetail(deck.id)
-        deckDetails.value.push(detail as DeckDetail)
+        fetchDeckDetail(deck.id).then((detail) => {
+          deckDetails.value.push(detail as DeckDetail)
+        }).catch((error) => {
+          console.error('获取牌堆详细信息时出错：', error)
+        })
+        fetchDeckDistribution(deck.id).then((distribution) => {
+          deckDistributions.value[deck.id] = distribution
+        }).catch((error) => {
+          console.error('获取牌堆复习进度时出错：', error)
+        })
       }
     }
   } catch (error) {
     console.error('获取牌堆详细信息时出错：', error)
+    router.push('/login')
   }
 })
+
+const getBarColor = (index: number): string => {
+  const colors = ['#4CAF50', '#2196F3', '#FF5722', '#9C27B0', '#FFEB3B'];
+  return colors[index % colors.length] || 'gray';
+}
+
+const getMarginTop = (id: number): string => {
+  const distribution_nums = deckDistributions.value[id];
+
+  if (!distribution_nums || distribution_nums.length === 0) {
+    return '-100px';
+  }
+  
+  console.log(distribution_nums)
+  
+  const result = distribution_nums.reduce((acc, cur) => {
+    acc.sum += cur;
+    acc.max = Math.max(acc.max, cur);
+    return acc;
+  }, { sum: 0, max: distribution_nums[0] });
+
+  const { sum, max } = result;
+  return `${max / sum * 100 - 100}px`;
+}
+
+
 
 const clock = setInterval(() => {
   // 定时刷新牌堆列表
@@ -57,6 +94,7 @@ onUnmounted(() => {
 })
 </script>
 
+
 <template>
   <div class="home-container">
     <div class="auth-actions">
@@ -74,6 +112,17 @@ onUnmounted(() => {
                   <li>复习数量: {{ deckDetail.review_count }}</li>
                   <li>记住数量: {{ deckDetail.remembered_count }}</li>
                 </ul>
+                <div class="distribution-bar-graph" 
+                  :style="{marginTop: getMarginTop(deckDetail.id)}"
+                >
+                  <div 
+                    v-for="(value, index) in deckDistributions[deckDetail.id]"
+                    :key="index"
+                    class="bar"
+                    :style="{ height: `${value * 100 / deckDetail.review_count}%`, backgroundColor: getBarColor(index) }"
+                  >{{ value }}</div>
+                </div>
+
               </div>
               <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link"
                 >复习</router-link
@@ -251,4 +300,24 @@ onUnmounted(() => {
   color: var(--color-text-secondary);
   line-height: 1.6;
 }
+
+.distribution-bar-graph {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  width: 100%;
+  height: 100px;
+  /* margin-top: -50px; */
+  margin-bottom: 10px;
+}
+
+.bar {
+  width: 16%;
+  height: 0;
+  border-radius: 3px;
+  transition: height 0.3s ease;
+  margin-bottom: 1px; /* 添加间距 */
+}
+
+
 </style>

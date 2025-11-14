@@ -30,10 +30,10 @@ app.config["STATIC_FOLDER"] = os.path.join(os.path.dirname(__file__), "dist")
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=True)
+    username = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=True, index=True)
     password = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     decks = db.relationship(
         "Deck", backref="user", lazy=True, cascade="all, delete-orphan"
     )
@@ -59,10 +59,7 @@ class Deck(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(50), nullable=False)
     user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("user.id"),
-        default=1,
-        nullable=False,
+        db.Integer, db.ForeignKey("user.id"), default=1, nullable=False, index=True
     )
     cards = db.relationship(
         "Card",
@@ -92,27 +89,22 @@ class Deck(db.Model):
         return f"Deck(id={self.id}, name={self.name})"
 
     def count_cards(self) -> int:
-        cards = Card.query.filter_by(deck_id=self.id).all()
-        return len(cards)
+        return Card.query.filter_by(deck_id=self.id).count()
 
     def count_overtime_cards(self) -> int:
         current_time_stamp = datetime.now().timestamp()
 
         # 查询需要复习的卡片数量
-        needed_review_cards_length = (
-            Card.query.filter_by(deck_id=self.id)
-            .filter(Card.last_review.isnot(None))  # type: ignore
-            .filter(Card.status.is_(False))  # type: ignore
-            .filter(
-                or_(
-                    current_time_stamp
-                    > func.strftime("%s", Card.last_review)
-                    + Card.review_interval * 86400,
-                    Card.review_interval < 1,  # type: ignore
-                )
-            )
-            .count()
-        )
+        needed_review_cards_length = Card.query.filter(
+            Card.deck_id == self.id,  # type: ignore
+            Card.last_review.isnot(None),  # type: ignore
+            Card.status.is_(False),  # type: ignore
+            or_(
+                current_time_stamp
+                > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
+                Card.review_interval < 1,  # type: ignore
+            ),
+        ).count()
 
         return min(
             needed_review_cards_length + self.count_new_cards(),
@@ -121,54 +113,43 @@ class Deck(db.Model):
 
     def count_new_cards(self) -> int:
         arrangement = Arrangement.query.filter_by(deck_id=self.id).first()
-        not_reviewed_cards_count = (
-            Card.query.filter_by(deck_id=self.id)
-            .filter(Card.last_review.is_(None))  # type: ignore
-            .filter(Card.status.is_(False))  # type: ignore
-            .count()
-        )
         if arrangement is None:
             raise ValueError("Arrangement not found")
+
+        not_reviewed_cards_count = Card.query.filter_by(
+            deck_id=self.id, last_review=None, status=False
+        ).count()
+
         return min(not_reviewed_cards_count, arrangement.count)
 
     def count_review_cards(self) -> int:
-        # cards = Card.query.filter_by(deck_id=self.id).all()
-        # return len([card for card in cards if not card.status])
-        return (
-            Card.query.filter_by(deck_id=self.id)
-            .filter(Card.last_review.isnot(None))  # type: ignore
-            .filter(Card.status.is_(False))  # type: ignore
-            .count()
-        )
+        return Card.query.filter(
+            Card.deck_id == self.id,  # type: ignore
+            Card.last_review.isnot(None),  # type: ignore
+            Card.status.is_(False),  # type: ignore
+        ).count()
 
     def count_remembered_cards(self) -> int:
-        # cards = Card.query.filter_by(deck_id=self.id).all()
-        # return len([card for card in cards if card.status])
-        return (
-            Card.query.filter_by(deck_id=self.id)
-            .filter(Card.status.is_(True))  # type: ignore
-            .count()
-        )
+        return Card.query.filter_by(deck_id=self.id, status=True).count()
 
 
 class Card(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("user.id"),
-        default=1,
-        nullable=False,
+        db.Integer, db.ForeignKey("user.id"), default=1, nullable=False, index=True
     )
-    deck_id = db.Column(db.Integer, db.ForeignKey("deck.id"), nullable=False)
+    deck_id = db.Column(
+        db.Integer, db.ForeignKey("deck.id"), nullable=False, index=True
+    )
     front = db.Column(db.Text, nullable=False)
     back = db.Column(db.Text, nullable=False)
-    last_review = db.Column(db.DateTime, nullable=True)
+    last_review = db.Column(db.DateTime, nullable=True, index=True)
     history = db.relationship(
         "History", backref="card", lazy=True, cascade="all, delete-orphan"
     )
     stability = db.Column(db.Float, nullable=False, default=0.4)
     review_interval = db.Column(db.Float, nullable=False, default=1)
-    status = db.Column(db.Boolean, nullable=False, default=False)
+    status = db.Column(db.Boolean, nullable=False, default=False, index=True)
 
     def __init__(self, deck_id: int, front: str, back: str, user_id: int):
         self.deck_id = deck_id
@@ -231,7 +212,7 @@ class Card(db.Model):
             card_id=self.id,
             review_date=datetime.now(),
             stability=feedback / 100,
-            user_id=self.user_id
+            user_id=self.user_id,
         )
         db.session.add(history)
 
@@ -282,16 +263,17 @@ class Card(db.Model):
 class History(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("user.id"),
-        default=1,
-        nullable=False,
+        db.Integer, db.ForeignKey("user.id"), default=1, nullable=False, index=True
     )
-    card_id = db.Column(db.Integer, db.ForeignKey("card.id"), nullable=False)
-    review_date = db.Column(db.DateTime, nullable=False)
+    card_id = db.Column(
+        db.Integer, db.ForeignKey("card.id"), nullable=False, index=True
+    )
+    review_date = db.Column(db.DateTime, nullable=False, index=True)
     stability = db.Column(db.Float, nullable=False)
 
-    def __init__(self, card_id: int, review_date: datetime, stability: float, user_id: int):
+    def __init__(
+        self, card_id: int, review_date: datetime, stability: float, user_id: int
+    ):
         self.card_id = card_id
         self.review_date = review_date
         self.stability = stability
@@ -307,12 +289,11 @@ class History(db.Model):
 class Arrangement(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("user.id"),
-        default=1,
-        nullable=False,
+        db.Integer, db.ForeignKey("user.id"), default=1, nullable=False, index=True
     )
-    deck_id = db.Column(db.Integer, db.ForeignKey("deck.id"), nullable=False)
+    deck_id = db.Column(
+        db.Integer, db.ForeignKey("deck.id"), nullable=False, index=True
+    )
     count = db.Column(db.Integer, nullable=False)
 
     def __init__(self, deck_id: int, count: int, user_id: int):
@@ -343,7 +324,12 @@ def register():
         data = request.get_json()
 
         # 验证必需字段
-        if not data or not data.get("username") or not data.get("password") or not data.get("code"):
+        if (
+            not data
+            or not data.get("username")
+            or not data.get("password")
+            or not data.get("code")
+        ):
             return jsonify({"error": "用户名和密码都是必需的"}), 400
 
         username = data["username"].strip()
@@ -441,6 +427,7 @@ def refresh():
     access_token = create_access_token(identity=user_id)
     return jsonify(access_token=access_token)
 
+
 @app.route("/api/user/profile", methods=["GET"])
 @jwt_required()
 def get_user_profile():
@@ -466,7 +453,7 @@ def create_deck():
     if not request.json:
         return jsonify({"error": "Invalid request"}), 400
     name = request.json.get("name")
-    last_deck = Deck.query.order_by(Deck.id.desc()).first() # type: ignore
+    last_deck = Deck.query.order_by(Deck.id.desc()).first()  # type: ignore
     if last_deck is None:
         max_deck_id = -1
     else:
@@ -564,20 +551,51 @@ def get_deck(deck_id: int):
     deck: Deck | None = Deck.query.filter_by(id=deck_id).first()
     if deck is None:
         return jsonify({"error": "Deck not found"}), 404
+    overtime_cards = deck.count_overtime_cards()
+
     return jsonify(
         {
-            "id": deck.id,
-            "name": deck.name,
-            "forget_line": deck.forget_line,
-            "omega": deck.omega,
-            "max_delta": deck.max_delta,
+            "id": deck.id,  #
+            "name": deck.name,  #
+            # "forget_line": deck.forget_line,
+            # "omega": deck.omega,
+            # "max_delta": deck.max_delta,
             "cards_count": deck.count_cards(),
-            "new_count": min(deck.count_new_cards(), deck.count_overtime_cards()),
-            "overtime_count": deck.count_overtime_cards(),
+            "new_count": min(deck.count_new_cards(), overtime_cards),
+            "overtime_count": overtime_cards,  #
             "review_count": deck.count_review_cards(),
             "remembered_count": deck.count_remembered_cards(),
         }
     )
+
+
+@app.route("/api/decks/<int:deck_id>/distribution", methods=["GET"])
+@jwt_required()
+def get_deck_distribution(deck_id: int):
+    deck = Deck.query.get(deck_id)
+    if deck is None:
+        return jsonify({"error": "Deck not found"}), 404
+
+    max_delta = deck.max_delta
+    current_time_stamp = datetime.now().timestamp()
+    distribution = []
+
+    for i in range(10):
+        start = i * max_delta / 10
+        end = (i + 1) * max_delta / 10
+        count = Card.query.filter(
+            Card.deck_id == deck.id,
+            Card.last_review.isnot(None), # type: ignore
+            Card.status.is_(False), # type: ignore
+            (
+                func.strftime("%s", Card.last_review)
+                + Card.review_interval * 86400
+                - current_time_stamp
+            ).between(start * 86400, end * 86400),
+        ).count()
+        distribution.append(count)
+
+    return jsonify(distribution)
 
 
 # 卡片管理
@@ -655,12 +673,11 @@ def list_cards():
         return jsonify({"error": "deck_id is required"}), 400
     page = request.args.get("page", 0, type=int)
     per_page = request.args.get("per_page", 10, type=int)
-    cards = Card.query.filter_by(deck_id=deck_id).paginate(
-        page=page, per_page=per_page
-    )
+    cards = Card.query.filter_by(deck_id=deck_id).paginate(page=page, per_page=per_page)
     return jsonify(
         [{"id": card.id, "front": card.front, "back": card.back} for card in cards]
     )
+
 
 # 4.1 批量导出卡组的卡片
 @app.route("/api/cards/export", methods=["GET"])
@@ -669,33 +686,36 @@ def export_cards():
     deck_id = request.args.get("deck_id")
     if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
-    
+
     # 获取当前用户ID
     user_id = get_jwt_identity()
-    
+
     # 验证用户是否有权限访问该卡组
     deck = Deck.query.filter_by(id=deck_id, user_id=user_id).first()
     if deck is None:
         return jsonify({"error": "Deck not found or access denied"}), 404
-    
+
     # 获取卡组的所有卡片
     cards = Card.query.filter_by(deck_id=deck_id).all()
-    
+
     # 准备导出数据
-    export_data = [{
-        "正面": card.front,
-        "反面": card.back
-    } for card in cards]
-    
+    export_data = [{"正面": card.front, "反面": card.back} for card in cards]
+
     # 创建DataFrame并导出为Excel
     df = pd.DataFrame(export_data)
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Cards')
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        df.to_excel(writer, index=False, sheet_name="Cards")
     output.seek(0)
-    
+
     # 返回Excel文件
-    return send_file(output, as_attachment=True, download_name=f'deck_{deck_id}_cards.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=f"deck_{deck_id}_cards.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
 
 # 4.2 批量导入卡片到卡组
 @app.route("/api/cards/import", methods=["POST"])
@@ -704,96 +724,109 @@ def import_cards():
     # deck_id = request.args.get("deck_id")
     # if deck_id is None:
     #     return jsonify({"error": "deck_id is required"}), 400
-    
+
     # 获取当前用户ID
     user_id = get_jwt_identity()
 
     deck_id = request.form.get("deck_id")
     if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
-    
+
     # 验证用户是否有权限访问该卡组
     deck = Deck.query.filter_by(id=deck_id, user_id=user_id).first()
     if deck is None:
         return jsonify({"error": "Deck not found or access denied"}), 404
-    
+
     # print(request.json)
-    
+
     # 检查是否有上传文件
-    if 'file' not in request.files:
+    if "file" not in request.files:
         return jsonify({"error": "No file provided A"}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
+
+    file = request.files["file"]
+    if file.filename == "":
         return jsonify({"error": "No file selected B"}), 400
-    
+
     # 读取Excel文件
     try:
         df = pd.read_excel(file)
-        
+
         # 验证必要的列是否存在
-        if '正面' not in df.columns and 'Front' not in df.columns:
+        if "正面" not in df.columns and "Front" not in df.columns:
             return jsonify({"error": "Missing '正面' or 'Front' column"}), 400
-        if '反面' not in df.columns and 'Back' not in df.columns:
+        if "反面" not in df.columns and "Back" not in df.columns:
             return jsonify({"error": "Missing '反面' or 'Back' column"}), 400
-        
+
         # 处理列名
-        front_col = '正面' if '正面' in df.columns else 'Front'
-        back_col = '反面' if '反面' in df.columns else 'Back'
-        
+        front_col = "正面" if "正面" in df.columns else "Front"
+        back_col = "反面" if "反面" in df.columns else "Back"
+
         # 导入卡片
         imported_cards = []
         updated_cards = []
         for index, row in df.iterrows():
             front = row[front_col]
             back = row[back_col]
-            
+
             # 跳过空行
-            if pd.isna(front) or pd.isna(back) or not str(front).strip() or not str(back).strip():
+            if (
+                pd.isna(front)
+                or pd.isna(back)
+                or not str(front).strip()
+                or not str(back).strip()
+            ):
                 continue
 
-            same_card = Card.query.filter_by(user_id=int(user_id), deck_id=int(deck_id), front=str(front), back=str(back)).first()
+            same_card = Card.query.filter_by(
+                user_id=int(user_id),
+                deck_id=int(deck_id),
+                front=str(front),
+                back=str(back),
+            ).first()
             if same_card is not None:
                 continue
-            same_front_card = Card.query.filter_by(user_id=int(user_id), deck_id=int(deck_id), front=str(front)).first()
+            same_front_card = Card.query.filter_by(
+                user_id=int(user_id), deck_id=int(deck_id), front=str(front)
+            ).first()
             if same_front_card is not None:
                 same_front_card.back = str(back)
                 # db.session.commit()
-                updated_cards.append({
-                    "front": str(front),
-                    "back": str(back)
-                })
+                updated_cards.append({"front": str(front), "back": str(back)})
                 continue
-            same_back_card = Card.query.filter_by(user_id=int(user_id), deck_id=int(deck_id), back=str(back)).first()
+            same_back_card = Card.query.filter_by(
+                user_id=int(user_id), deck_id=int(deck_id), back=str(back)
+            ).first()
             if same_back_card is not None:
                 same_back_card.front = str(front)
                 # db.session.commit()
-                updated_cards.append({
-                    "front": str(front),
-                    "back": str(back)
-                })
+                updated_cards.append({"front": str(front), "back": str(back)})
                 continue
-            
+
             # 创建新卡片
-            new_card = Card(deck_id=int(deck_id), front=str(front), back=str(back), user_id=user_id)
+            new_card = Card(
+                deck_id=int(deck_id), front=str(front), back=str(back), user_id=user_id
+            )
             db.session.add(new_card)
-            imported_cards.append({
-                "front": str(front),
-                "back": str(back)
-            })
-        
+            imported_cards.append({"front": str(front), "back": str(back)})
+
         # 提交更改
         db.session.commit()
-        
-        return jsonify({
-            "message": f"{len(imported_cards)} cards imported. {len(updated_cards)} cards updated.",
-            # "imported_cards": imported_cards,
-            # "updated_cards": updated_cards
-        }), 200
-        
+
+        return (
+            jsonify(
+                {
+                    "message": f"{len(imported_cards)} cards imported. {len(updated_cards)} cards updated.",
+                    # "imported_cards": imported_cards,
+                    # "updated_cards": updated_cards
+                }
+            ),
+            200,
+        )
+
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to import cards: {str(e)}"}), 500
+
 
 # 4.3 获取分页总页数
 @app.route("/api/cards/page_count", methods=["GET"])
@@ -803,10 +836,12 @@ def get_card_pages():
     if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
     per_page = request.args.get("per_page", 10, type=int)
-    page_num = Card.query.filter_by(deck_id=deck_id).paginate(
-        page=1, per_page=per_page
-    ).pages
-    return jsonify({"pages": page_num, "count": Card.query.filter_by(deck_id=deck_id).count()})
+    page_num = (
+        Card.query.filter_by(deck_id=deck_id).paginate(page=1, per_page=per_page).pages
+    )
+    return jsonify(
+        {"pages": page_num, "count": Card.query.filter_by(deck_id=deck_id).count()}
+    )
 
 
 # 5. 复习卡片
@@ -851,18 +886,15 @@ def list_review_cards():
     if deck_id is None:
         return jsonify({"error": "deck_id is required"}), 400
     current_time_stamp = func.strftime("%s", func.now())
-    overtime_cards = (
-        Card.query.filter_by(deck_id=deck_id)
-        .filter(Card.last_review.isnot(None))  # type: ignore
-        .filter(
-            or_(
-                current_time_stamp
-                > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
-                Card.review_interval < 1,  # type: ignore
-            )
-        )
-        .all()
-    )
+    overtime_cards = Card.query.filter(
+        Card.deck_id == deck_id,  # type: ignore
+        Card.last_review.isnot(None),  # type: ignore
+        or_(
+            current_time_stamp
+            > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
+            Card.review_interval < 1,  # type: ignore
+        ),
+    ).all()
     return jsonify(
         [
             {"id": card.id, "front": card.front, "back": card.back}
@@ -921,22 +953,23 @@ def next_card():
     current_time_stamp = datetime.now().timestamp()
     arrangement_count = arrangement.count
     cards = (
-        Card.query.filter_by(deck_id=deck_id)
-        .filter_by(status=False)
-        .filter(
+        Card.query.filter(
+            Card.deck_id == deck_id,  # type: ignore
+            Card.status.is_(False),  # type: ignore
             or_(
                 current_time_stamp
                 > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
                 arrangement_count > 0,
                 Card.review_interval < 1,  # type: ignore
-            )
+            ),
         )
         .order_by(
             func.strftime("%s", Card.last_review)
             + Card.review_interval * 86400
             - current_time_stamp
         )
-    ).all()
+        .all()
+    )
     if len(cards) == 0:
         return jsonify({"message": "No cards to review"}), 204
     index = 1 if len(cards) > 1 else 0
@@ -985,22 +1018,23 @@ def review_and_next_card():
     current_time_stamp = datetime.now().timestamp()
     arrangement_count = arrangement.count
     cards: List[Card] = (
-        Card.query.filter_by(deck_id=deck_id)
-        .filter_by(status=False)
-        .filter(
+        Card.query.filter(
+            Card.deck_id == deck_id,  # type: ignore
+            Card.status.is_(False),  # type: ignore
             or_(
                 current_time_stamp
                 > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
                 arrangement_count > 0,
                 Card.review_interval < 1,  # type: ignore
-            )
+            ),
         )
         .order_by(
             func.strftime("%s", Card.last_review)
             + Card.review_interval * 86400
             - current_time_stamp
         )
-    ).all()
+        .all()
+    )
     if len(cards) == 0:
         return jsonify({"message": "No cards to review"}), 204
     for c in cards:
