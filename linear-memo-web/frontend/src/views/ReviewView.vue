@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  fetchDeckDetail,
-  fetchNextCard,
-  fetchReviewCards,
-  reviewAndNextCard,
-  reviewCard,
-} from '@/utils/api'
+import { fetchDeckDetail, fetchNextCard, reviewAndNextCard, reviewCard } from '@/utils/api'
 import type { Card, Deck } from '@/utils/types'
 import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -36,11 +30,13 @@ const handleReview = async (feedback: number) => {
       router.push('/')
       return
     }
-    if (next_card_info.overtime_count < 0.1) {
+    if (next_card_info.review_result) {
+      current_overtime.value -= 1
+    }
+    if (current_overtime.value < 0.1) {
       router.push('/')
       return
     }
-    current_overtime.value = next_card_info.overtime_count
     currentCard.value = next_card_info.card
   } finally {
     isLoading.value = false

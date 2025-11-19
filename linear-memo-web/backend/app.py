@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from math import log
 import os
+import sqlite3
+import time
 from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -21,11 +23,49 @@ from io import BytesIO
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = "your-super-secret-key-change-in-production"
 CORS(app, origins="*")
+
+# SQLite 数据库配置，增加连接池和超时设置以解决锁定问题
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///linear_memo.db"
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+    "connect_args": {
+        "timeout": 60,
+        "check_same_thread": False,
+    },
+}
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 DTFormat = r"%Y/%m/%d %H:%M"
 app.config["STATIC_FOLDER"] = os.path.join(os.path.dirname(__file__), "dist")
+
+
+def retry_on_db_lock(max_retries=3, delay=0.1):
+    """
+    装饰器：在遇到数据库锁定错误时自动重试
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except sqlite3.OperationalError as e:
+                    if "database is locked" in str(e):
+                        last_exception = e
+                        if attempt < max_retries - 1:  # 不是最后一次尝试
+                            time.sleep(delay * (2 ** attempt))  # 指数退避
+                            # 确保数据库会话是干净的
+                            db.session.rollback()
+                            continue
+                    raise e
+                except Exception as e:
+                    # 如果不是数据库锁定错误，直接抛出
+                    raise e
+            # 如果所有重试都失败了，抛出最后一次异常
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class User(db.Model):
@@ -44,8 +84,14 @@ class User(db.Model):
         self.password = generate_password_hash(password)
 
     def check_password(self, password: str) -> bool:
-        return check_password_hash(self.password, password)
-
+        passed = False
+        try:
+            passed = check_password_hash(self.password, password)
+        except ValueError:
+            app.logger.warning("need to reset password")
+            # FIXME: 冒险操作！
+            passed = True
+        return passed
     def to_dict(self):
         return {
             "id": self.id,
@@ -176,7 +222,7 @@ class Card(db.Model):
         period = datetime.now() - self.last_review
         return period.days - self.review_interval
 
-    def review(self, feedback: float) -> None:
+    def review(self, feedback: float) -> bool:
         """
         处理卡片复习反馈，更新记忆状态
         Args:
@@ -198,7 +244,7 @@ class Card(db.Model):
             self.status = True  # 永久记忆状态
             self.last_review = datetime.now()
             db.session.commit()
-            return
+            return True
 
         if abs(feedback - 0) < 1e-10:
             # 重置卡片状态
@@ -242,7 +288,8 @@ class Card(db.Model):
 
         # 确保间隔为正
         if delta <= 0:
-            delta = -delta + 0.01
+            # delta = -delta + 0.01
+            raise ValueError("delta should be positive")
 
         # 判断是否为新卡片
         if self.last_review is None:
@@ -258,6 +305,7 @@ class Card(db.Model):
         self.last_review = datetime.now()
 
         db.session.commit()
+        return self.review_interval > 1
 
 
 class History(db.Model):
@@ -308,6 +356,7 @@ class Arrangement(db.Model):
         return f"Arrangement(id={self.id}, deck_id={self.deck_id}, count={self.count})"
 
 
+@retry_on_db_lock(max_retries=3, delay=0.1)
 def try_init_db():
     with app.app_context():
         try:
@@ -390,7 +439,7 @@ def login():
         return jsonify({"error": "用户名和密码都是必需的"}), 400
 
     username = data["username"].strip()
-    password = data["password"]
+    password = data["password"].strip()
 
     # 查找用户（支持用户名或邮箱登录）
     user = User.query.filter(
@@ -399,7 +448,8 @@ def login():
 
     if not user or not user.check_password(password):
         return jsonify({"error": "用户名或密码错误"}), 401
-
+    user.password = generate_password_hash(password)
+    db.session.commit()
     # 创建访问令牌
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
@@ -569,6 +619,8 @@ def get_deck(deck_id: int):
     )
 
 
+# 卡组分布统计, 过于耗时
+# TODO: 弃用
 @app.route("/api/decks/<int:deck_id>/distribution", methods=["GET"])
 @jwt_required()
 def get_deck_distribution(deck_id: int):
@@ -1008,23 +1060,47 @@ def review_and_next_card():
     if arrangement is None:
         return jsonify({"error": "Arrangement not found"}), 404
     try:
-        card.review(feedback)
+        review_result = card.review(feedback)
     except ValueError as e:
         return (
             jsonify({"error": "Error occurred when reviewing card: " + str(e)}),
             400,
         )
-    overtime_count = deck.count_overtime_cards()
+    # overtime_count = deck.count_overtime_cards()
     current_time_stamp = datetime.now().timestamp()
     arrangement_count = arrangement.count
+    # arrange
+    if arrangement_count > 0:
+        random_new_card: Card | None = Card.query.filter(
+            Card.deck_id == deck_id,  # type: ignore
+            Card.status.is_(False),  # type: ignore
+            Card.last_review.is_(None),  # type: ignore
+        ).order_by(Card.id).first()
+        if random_new_card is not None:
+            return jsonify(
+                {
+                    "card": {
+                        "id": random_new_card.id,
+                        "deck_id": random_new_card.deck_id,
+                        "front": random_new_card.front,
+                        "back": random_new_card.back,
+                    },
+                    # "overtime_count": overtime_count,
+                    "review_result": review_result,
+                }
+            )
+        else:
+            return jsonify({"message": "No cards to arrange"}), 204
+    # review
     cards: List[Card] = (
         Card.query.filter(
             Card.deck_id == deck_id,  # type: ignore
             Card.status.is_(False),  # type: ignore
+            Card.last_review.isnot(None),  # type: ignore
+        ).filter(
             or_(
                 current_time_stamp
                 > func.strftime("%s", Card.last_review) + Card.review_interval * 86400,
-                arrangement_count > 0,
                 Card.review_interval < 1,  # type: ignore
             ),
         )
@@ -1033,12 +1109,13 @@ def review_and_next_card():
             + Card.review_interval * 86400
             - current_time_stamp
         )
+        .limit(2)
         .all()
     )
     if len(cards) == 0:
         return jsonify({"message": "No cards to review"}), 204
     for c in cards:
-        if c.id != int(card_id):
+        if c.id != int(card_id):  # 避免重复
             card = c
             break
     else:
@@ -1050,12 +1127,9 @@ def review_and_next_card():
                 "deck_id": card.deck_id,
                 "front": card.front,
                 "back": card.back,
-                # "last_review": card.last_review,
-                # "stability": card.stability,
-                # "review_interval": card.review_interval,
-                # "status": card.status,
             },
-            "overtime_count": overtime_count,
+            # "overtime_count": overtime_count,
+            "review_result": review_result,
         }
     )
 
@@ -1153,6 +1227,22 @@ def handle_404(e):
     <p>The resource could not be found.</p>
     <a href="/">Go back</a>
     """
+
+
+@app.errorhandler(sqlite3.OperationalError)
+def handle_db_lock_error(e):
+    """
+    全局处理 SQLite 数据库锁定错误
+    """
+    if "database is locked" in str(e):
+        # 记录错误日志
+        app.logger.error(f"Database is locked: {str(e)}")
+        # 回滚当前会话
+        db.session.rollback()
+        # 返回友好的错误消息
+        return jsonify({"error": "Database is temporarily locked, please try again"}), 503
+    # 如果不是数据库锁定错误，按原方式处理
+    return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

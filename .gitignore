@@ -12,3 +12,4 @@ word_cards.xlsx
 word_cards_old.xlsx
 dict.py
 linear-memo-web/backend/instance/linear_memo_bkp251110.db
+linear-memo-web/backend/memo.service

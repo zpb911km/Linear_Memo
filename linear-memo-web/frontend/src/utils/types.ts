@@ -43,7 +43,8 @@ export interface NextCardInfo {
   card: Card | null
   deck_id: number
   finished: boolean
-  overtime_count: number
+  // overtime_count: number
+  review_result: boolean
 }
 
 // 用户类型

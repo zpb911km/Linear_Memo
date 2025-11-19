@@ -22,16 +22,20 @@ onMounted(async () => {
     if (response) {
       // console.log(response)
       for (const deck of response) {
-        fetchDeckDetail(deck.id).then((detail) => {
-          deckDetails.value.push(detail as DeckDetail)
-        }).catch((error) => {
-          console.error('获取牌堆详细信息时出错：', error)
-        })
-        fetchDeckDistribution(deck.id).then((distribution) => {
-          deckDistributions.value[deck.id] = distribution
-        }).catch((error) => {
-          console.error('获取牌堆复习进度时出错：', error)
-        })
+        fetchDeckDetail(deck.id)
+          .then((detail) => {
+            deckDetails.value.push(detail as DeckDetail)
+          })
+          .catch((error) => {
+            console.error('获取牌堆详细信息时出错：', error)
+          })
+        fetchDeckDistribution(deck.id)
+          .then((distribution) => {
+            deckDistributions.value[deck.id] = distribution
+          })
+          .catch((error) => {
+            console.error('获取牌堆复习进度时出错：', error)
+          })
       }
     }
   } catch (error) {
@@ -41,30 +45,31 @@ onMounted(async () => {
 })
 
 const getBarColor = (index: number): string => {
-  const colors = ['#4CAF50', '#2196F3', '#FF5722', '#9C27B0', '#FFEB3B'];
-  return colors[index % colors.length] || 'gray';
+  const colors = ['#4CAF50', '#2196F3', '#FF5722', '#9C27B0', '#FFEB3B']
+  return colors[index % colors.length] || 'gray'
 }
 
 const getMarginTop = (id: number): string => {
-  const distribution_nums = deckDistributions.value[id];
+  const distribution_nums = deckDistributions.value[id]
 
   if (!distribution_nums || distribution_nums.length === 0) {
-    return '-100px';
+    return '-100px'
   }
-  
+
   console.log(distribution_nums)
-  
-  const result = distribution_nums.reduce((acc, cur) => {
-    acc.sum += cur;
-    acc.max = Math.max(acc.max, cur);
-    return acc;
-  }, { sum: 0, max: distribution_nums[0] });
 
-  const { sum, max } = result;
-  return `${max / sum * 100 - 100}px`;
+  const result = distribution_nums.reduce(
+    (acc, cur) => {
+      acc.sum += cur
+      acc.max = Math.max(acc.max, cur)
+      return acc
+    },
+    { sum: 0, max: distribution_nums[0] },
+  )
+
+  const { sum, max } = result
+  return `${(max / sum) * 100 - 100}px`
 }
-
-
 
 const clock = setInterval(() => {
   // 定时刷新牌堆列表
@@ -94,7 +99,6 @@ onUnmounted(() => {
 })
 </script>
 
-
 <template>
   <div class="home-container">
     <div class="auth-actions">
@@ -112,17 +116,22 @@ onUnmounted(() => {
                   <li>复习数量: {{ deckDetail.review_count }}</li>
                   <li>记住数量: {{ deckDetail.remembered_count }}</li>
                 </ul>
-                <div class="distribution-bar-graph" 
-                  :style="{marginTop: getMarginTop(deckDetail.id)}"
+                <div
+                  class="distribution-bar-graph"
+                  :style="{ marginTop: getMarginTop(deckDetail.id) }"
                 >
-                  <div 
+                  <div
                     v-for="(value, index) in deckDistributions[deckDetail.id]"
                     :key="index"
                     class="bar"
-                    :style="{ height: `${value * 100 / deckDetail.review_count}%`, backgroundColor: getBarColor(index) }"
-                  >{{ value }}</div>
+                    :style="{
+                      height: `${(value * 100) / deckDetail.review_count}%`,
+                      backgroundColor: getBarColor(index),
+                    }"
+                  >
+                    {{ value }}
+                  </div>
                 </div>
-
               </div>
               <router-link :to="{ path: `review/${deckDetail.id}` }" class="review-link"
                 >复习</router-link
@@ -318,6 +327,4 @@ onUnmounted(() => {
   transition: height 0.3s ease;
   margin-bottom: 1px; /* 添加间距 */
 }
-
-
 </style>

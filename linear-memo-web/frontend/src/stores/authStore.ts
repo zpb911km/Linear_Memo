@@ -4,7 +4,6 @@ import { httpClient } from '../utils/httpClient'
 import type { User } from '../utils/types'
 import router from '@/router'
 
-
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const isAuthenticated = ref(false)

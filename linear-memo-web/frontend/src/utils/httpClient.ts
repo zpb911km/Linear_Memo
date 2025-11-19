@@ -215,6 +215,7 @@ interface ApiResponse<T> {
 }
 
 // 创建默认的HTTP客户端实例
+// const httpClient = new HttpClient('http://172.18.91.245:65533/api')
 // const httpClient = new HttpClient('http://103.151.217.252:65533/api')
 const httpClient = new HttpClient('http://localhost:65533/api')
 
