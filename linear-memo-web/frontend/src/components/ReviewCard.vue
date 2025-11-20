@@ -2,11 +2,12 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import type { Card } from '@/utils/types'
 
-const props = defineProps<{ card: Card }>()
+const props = defineProps<{ card: Card, forgetLine: number }>()
 const emit = defineEmits<{ (e: 'review', feedback: number): void }>()
 
 const fliped = ref(false)
-const feedback = ref(40)
+const feedbackDefault = props.forgetLine
+const feedback = ref(feedbackDefault)
 let isDragging = ref(false)
 
 const feedbackHandler = (e: MouseEvent | TouchEvent) => {
@@ -20,7 +21,7 @@ const feedbackHandler = (e: MouseEvent | TouchEvent) => {
   fliped.value = false
   isDragging.value = false
   emit('review', feedback.value)
-  feedback.value = 40
+  feedback.value = feedbackDefault
 }
 
 const koHandler = async () => {
@@ -28,7 +29,7 @@ const koHandler = async () => {
   fliped.value = false
   isDragging.value = false
   emit('review', feedback.value)
-  feedback.value = 40
+  feedback.value = feedbackDefault
 }
 
 const draggingHandler = (e: MouseEvent | TouchEvent) => {

@@ -252,6 +252,8 @@ class Card(db.Model):
             self.review_interval = 1
             self.last_review = None
             self.status = False
+            db.session.commit()
+            return False
 
         # 记录历史反馈
         history = History(

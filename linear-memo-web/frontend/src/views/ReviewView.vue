@@ -82,8 +82,8 @@ onMounted(() => {
     </div>
 
     <div class="review-content">
-      <div class="card-container" v-if="!isLoading && currentCard">
-        <review-card :card="currentCard" @review="handleReview"></review-card>
+      <div class="card-container" v-if="!isLoading && currentCard && currentDeck">
+        <review-card :card="currentCard" :forgetLine="currentDeck.forget_line" @review="handleReview"></review-card>
       </div>
 
       <div class="loading-state" v-if="isLoading">
