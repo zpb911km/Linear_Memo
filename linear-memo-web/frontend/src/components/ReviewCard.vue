@@ -2,13 +2,17 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import type { Card } from '@/utils/types'
 
-const props = defineProps<{ card: Card, forgetLine: number }>()
+const props = defineProps<{ card: Card; forgetLine: number }>()
 const emit = defineEmits<{ (e: 'review', feedback: number): void }>()
 
 const fliped = ref(false)
-const feedbackDefault = props.forgetLine
-const feedback = ref(feedbackDefault)
+const feedbackDefault = props.forgetLine * 100
+const feedback = ref(40)
 let isDragging = ref(false)
+
+onMounted(() => {
+  feedback.value = feedbackDefault
+})
 
 const feedbackHandler = (e: MouseEvent | TouchEvent) => {
   if (isDragging.value) return
@@ -115,7 +119,7 @@ const addDefaultStyle = (html: string) => {
             class="feedback-bar"
             :style="{ width: `${feedback}%`, background: feedbackBarColor }"
           >
-            <div class="feedback-value">{{ feedback.toFixed(0) }}</div>
+            <div class="feedback-value">{{ feedback?.toFixed(0) || 0 }}</div>
           </div>
         </div>
         <button class="btn-100" @mousedown="feedback = 100" @click="koHandler">k.o.</button>

@@ -609,9 +609,9 @@ def get_deck(deck_id: int):
         {
             "id": deck.id,  #
             "name": deck.name,  #
-            # "forget_line": deck.forget_line,
-            # "omega": deck.omega,
-            # "max_delta": deck.max_delta,
+            "forget_line": deck.forget_line,
+            "omega": deck.omega,
+            "max_delta": deck.max_delta,
             "cards_count": deck.count_cards(),
             "new_count": min(deck.count_new_cards(), overtime_cards),
             "overtime_count": overtime_cards,  #
@@ -622,7 +622,6 @@ def get_deck(deck_id: int):
 
 
 # 卡组分布统计, 过于耗时
-# TODO: 弃用
 @app.route("/api/decks/<int:deck_id>/distribution", methods=["GET"])
 @jwt_required()
 def get_deck_distribution(deck_id: int):
@@ -775,10 +774,6 @@ def export_cards():
 @app.route("/api/cards/import", methods=["POST"])
 @jwt_required()
 def import_cards():
-    # deck_id = request.args.get("deck_id")
-    # if deck_id is None:
-    #     return jsonify({"error": "deck_id is required"}), 400
-
     # 获取当前用户ID
     user_id = get_jwt_identity()
 
@@ -863,8 +858,8 @@ def import_cards():
             db.session.add(new_card)
             imported_cards.append({"front": str(front), "back": str(back)})
 
-        # 提交更改
-        db.session.commit()
+            # 提交更改
+            db.session.commit()
 
         return (
             jsonify(

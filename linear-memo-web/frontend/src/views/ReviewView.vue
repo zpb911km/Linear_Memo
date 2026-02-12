@@ -52,7 +52,6 @@ onMounted(() => {
     .then(([deck, card]) => {
       currentDeck.value = deck
       total_overtime.value = deck.overtime_count
-      console.log(deck.overtime_count)
       if (deck.overtime_count < 0.1) {
         router.push('/')
         return
@@ -83,7 +82,11 @@ onMounted(() => {
 
     <div class="review-content">
       <div class="card-container" v-if="!isLoading && currentCard && currentDeck">
-        <review-card :card="currentCard" :forgetLine="currentDeck.forget_line" @review="handleReview"></review-card>
+        <review-card
+          :card="currentCard"
+          :forgetLine="currentDeck.forget_line"
+          @review="handleReview"
+        ></review-card>
       </div>
 
       <div class="loading-state" v-if="isLoading">

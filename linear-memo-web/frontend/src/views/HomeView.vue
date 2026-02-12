@@ -56,8 +56,6 @@ const getMarginTop = (id: number): string => {
     return '-100px'
   }
 
-  console.log(distribution_nums)
-
   const result = distribution_nums.reduce(
     (acc, cur) => {
       acc.sum += cur
